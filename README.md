@@ -20,4 +20,4 @@
 - Ollama (local LLM runner)
 
 ## Getting Started
-🚧 Work in progress – stay tuned!
+🚧 Work in progress – stay tuned!!
