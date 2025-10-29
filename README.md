@@ -1,4 +1,4 @@
-# SEOMancer 🔮
+# SEOMancer 🔮.
 
 **SEOMancer** is a free, AI-powered, privacy-respecting SEO analysis and improvement tool that runs 100% locally. Just input your website URL and let a local LLM scan, score, and improve your SEO setup.
 
