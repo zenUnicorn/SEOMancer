@@ -29,6 +29,16 @@ export async function POST(req) {
         }
 
         const fetchTime = Date.now() - startTime;
+
+        // Detect if the site blocks iframes (X-Frame-Options or CSP frame-ancestors)
+        const xfo = (response.headers.get('x-frame-options') || '').toUpperCase();
+        const cspHeader = response.headers.get('content-security-policy') || '';
+        const iframeBlocked =
+            xfo === 'DENY' ||
+            xfo === 'SAMEORIGIN' ||
+            (cspHeader.toLowerCase().includes('frame-ancestors') && !cspHeader.toLowerCase().includes('frame-ancestors *'));
+        // Thum.io: free screenshot service, no API key required
+        const screenshotUrl = `https://image.thum.io/get/width/1280/crop/900/noanimate/${encodeURIComponent(url)}`;
         const html = await response.text();
         const $ = cheerio.load(html);
 
@@ -122,165 +132,292 @@ export async function POST(req) {
 
         const keywordsContent = $('meta[name="keywords"]').attr('content') || '';
         let originalKeywords = keywordsContent.split(',').map(k => k.trim()).filter(Boolean);
-        let suggestedKeywords = [];
 
-        if (originalKeywords.length > 0) {
-            suggestedKeywords = [...new Set(originalKeywords.map(k => k.toLowerCase()))].map(word => ({
+        // ── Rich multi-signal keyword extraction (handles modern sites with no meta keywords) ──
+        // Pull from OG tags, Twitter cards, description, headings etc.
+        const ogTitle = $('meta[property="og:title"]').attr('content') || '';
+        const ogDesc = $('meta[property="og:description"]').attr('content') || '';
+        const twitterTitle = $('meta[name="twitter:title"]').attr('content') || '';
+        const twitterDesc = $('meta[name="twitter:description"]').attr('content') || '';
+
+        // Gather words from headings — these are the signals Google actually cares about
+        const h1Texts = $('h1').map((_, el) => $(el).text().trim()).get().join(' ');
+        const h2Texts = $('h2').map((_, el) => $(el).text().trim()).get().filter((_, i) => i < 6).join(' ');
+
+        // Tokenise all rich text signals into a keyword candidate pool
+        const richSignals = [ogTitle, ogDesc, twitterTitle, twitterDesc, h1Texts, h2Texts, metaDescription, title]
+            .join(' ')
+            .replace(/[^a-zA-Z\s-]/g, ' ')
+            .split(/\s+/)
+            .map(w => w.toLowerCase().replace(/^-+|-+$/g, ''))
+            .filter(w => w.length > 3);
+
+        const kStopWords = new Set([
+            'this', 'that', 'with', 'your', 'from', 'have', 'will', 'more', 'been',
+            'they', 'what', 'also', 'into', 'over', 'when', 'just', 'like', 'some',
+            'than', 'then', 'very', 'even', 'most', 'such', 'only', 'both', 'here',
+            'make', 'take', 'need', 'help', 'find', 'know', 'back', 'time', 'good',
+        ]);
+
+        const richCounts = {};
+        richSignals.forEach(w => {
+            if (!kStopWords.has(w) && !originalKeywords.map(k => k.toLowerCase()).includes(w)) {
+                richCounts[w] = (richCounts[w] || 0) + 1;
+            }
+        });
+
+        // Merge meta keywords (if any) + rich candidates, prioritise meta keywords
+        const richCandidates = Object.entries(richCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 12)
+            .map(([w]) => w);
+
+        // foundKeywords = explicitly declared meta keywords, no fallback
+        let foundKeywords = [...new Set(originalKeywords.map(k => k.toLowerCase()))].map(word => ({
+            word,
+            reason: 'Found in the page\'s keywords meta tag'
+        }));
+
+        // If meta keywords are empty, pull from rich signals (OG/headings) as found keywords
+        if (foundKeywords.length === 0 && richCandidates.length > 0) {
+            foundKeywords = richCandidates.slice(0, 8).map(word => ({
                 word,
-                reason: 'Found in the page\'s keywords meta tag'
+                reason: 'Extracted from page headings and OG meta tags'
             }));
-        } else {
-            // Create some from text if no keywords meta tag
-            const bodyText = $('body').text().replace(/\s+/g, ' ').trim();
-            const words = bodyText.split(' ').filter(w => w.length > 4); // Filter very short words
-            const wordCounts = {};
-            // Filter out common stopwords
-            const stopWords = ['these', 'those', 'there', 'their', 'about', 'which', 'would', 'could', 'should'];
-            words.forEach(w => {
-                const lw = w.toLowerCase();
-                if (!stopWords.includes(lw)) {
-                    wordCounts[lw] = (wordCounts[lw] || 0) + 1;
-                }
-            });
-
-            // Prioritize terms relating to SEO and performance generically if they exist
-            const highRankingThemes = ["software", "marketing", "business", "seo", "optimization", "performance", "digital", "agency", "tech"];
-
-            suggestedKeywords = Object.entries(wordCounts)
-                .sort((a, b) => {
-                    const aHighRanking = highRankingThemes.includes(a[0]) ? 100 : 0;
-                    const bHighRanking = highRankingThemes.includes(b[0]) ? 100 : 0;
-                    return (b[1] + bHighRanking) - (a[1] + aHighRanking);
-                })
-                .slice(0, 5)
-                .map(e => ({
-                    word: e[0],
-                    reason: highRankingThemes.includes(e[0]) ? 'Identified as a high-ranking industry keyword on your page' : 'Frequently appearing content keyword'
-                }));
         }
+
+        // Always create suggested keywords from body text to improve upon found ones
+        const bodyText = $('body').text().replace(/\s+/g, ' ').trim();
+        const words = bodyText.split(/[\s,.-]+/).filter(w => w.length > 4);
+        const wordCounts = {};
+        const stopWords = ['these', 'those', 'there', 'their', 'about', 'which', 'would', 'could', 'should', 'other', 'another', 'first', 'second', 'using'];
+
+        words.forEach(w => {
+            const lw = w.toLowerCase();
+            if (!stopWords.includes(lw) && !foundKeywords.some(f => f.word === lw)) {
+                wordCounts[lw] = (wordCounts[lw] || 0) + 1;
+            }
+        });
+
+        const highRankingThemes = ["software", "marketing", "business", "seo", "optimization", "performance", "digital", "agency", "tech", "platform", "solution"];
+
+        let suggestedKeywords = Object.entries(wordCounts)
+            .sort((a, b) => {
+                const aHighRanking = highRankingThemes.includes(a[0]) ? 100 : 0;
+                const bHighRanking = highRankingThemes.includes(b[0]) ? 100 : 0;
+                return (b[1] + bHighRanking) - (a[1] + aHighRanking);
+            })
+            .slice(0, 6)
+            .map(e => ({
+                word: e[0],
+                reason: highRankingThemes.includes(e[0]) ? 'High-value industry keyword discovered' : 'Frequently appearing organic keyword'
+            }));
 
         if (suggestedKeywords.length === 0) {
             suggestedKeywords = [
                 { word: "seo", reason: "Fundamental missing target" },
-                { word: "optimization", reason: "High value organic term" },
-                { word: "performance", reason: "Crucial for web metrics" }
-            ];
+                { word: "optimization", reason: "High-value term" },
+                { word: "performance", reason: "Crucial web metric" }
+            ].filter(s => !foundKeywords.some(f => f.word === s.word)).slice(0, 3);
         }
 
-        // Build a niche-aware search query from the site's own meta signals
-        const searchTerms = [
-            title.split(/[-|–]/)[0].trim(),
-            ...(originalKeywords.slice(0, 2)),
-            metaDescription.split(' ').slice(0, 6).join(' ')
-        ].filter(Boolean);
-        // Add "alternatives" to specifically find competitor lists
-        const searchQuery = [...new Set(searchTerms)].slice(0, 2).join(' ') + ' alternatives';
+        // ─── Competitor Discovery ───────────────────────────────────────────────
+        const userHost = new URL(url).hostname.replace('www.', '');
+
+        // Fix 1: Correct regex — split on dash, en-dash, pipe, or colon properly
+        const productName = (() => {
+            const titleSlug = title.split(/[-–|:]/)[0].trim();
+            const stopSegments = ['home', 'welcome', 'index', 'official', 'the', 'best'];
+            if (titleSlug && titleSlug.length > 1 && !stopSegments.includes(titleSlug.toLowerCase())) return titleSlug;
+            return userHost.split('.')[0]; // fallback to domain slug e.g. "spidra"
+        })();
 
         const BIG_TECH_BLOCKLIST = [
             'wikipedia.org', 'amazon.com', 'facebook.com', 'pinterest.com',
             'linkedin.com', 'youtube.com', 'twitter.com', 'instagram.com',
-            'reddit.com', 'apple.com', 'microsoft.com', 'quora.com', 'medium.com'
+            'reddit.com', 'apple.com', 'microsoft.com', 'quora.com', 'medium.com',
+            'dev.to', 'github.com', 'g2.com', 'capterra.com', 'getapp.com',
+            'trustpilot.com', 'producthunt.com', 'alternativeto.net', 'crunchbase.com',
+            'techcrunch.com', 'slashdot.org', 'sourceforge.net', 'ycombinator.com',
+            'theresanaiforthat.com', 'futurepedia.io', 'toolify.ai', 'there100.org',
+            'similarweb.com', 'statista.com', 'stackshare.io', 'saashub.com',
         ];
 
-        // Search DuckDuckGo for real niche competitors
-        let competitorUrls = [];
+        const isBlocked = (host) => BIG_TECH_BLOCKLIST.some(b => host.includes(b));
+
+        let competitorSlugs = []; // raw slugs from AlternativeTo
+        let competitorUrls = [];  // guessed/confirmed domains
+
+        // ── Strategy 1: AlternativeTo.net (most accurate — manually curated) ──
         try {
-            const ddgRes = await fetch(
-                `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`,
-                {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (compatible; SEOMancer/1.0)',
-                        'Accept': 'text/html',
-                    },
-                }
-            );
-            const ddgHtml = await ddgRes.text();
-            const $ddg = cheerio.load(ddgHtml);
-            const userHost = new URL(url).hostname.replace('www.', '');
-
-            $ddg('.result__url, .result__a').each((_, el) => {
-                const rawHref = $ddg(el).attr('href') || $ddg(el).text();
-                let parsed = rawHref;
-                try {
-                    const u = new URL(rawHref.startsWith('//') ? 'https:' + rawHref : rawHref);
-                    const uddg = u.searchParams.get('uddg');
-                    if (uddg) parsed = decodeURIComponent(uddg);
-                } catch (_) { /* use raw */ }
-
-                try {
-                    const compHost = new URL(parsed.startsWith('http') ? parsed : 'https://' + parsed).hostname.replace('www.', '');
-                    const isBlocked = BIG_TECH_BLOCKLIST.some(blocked => compHost.includes(blocked));
-
-                    if (compHost && compHost !== userHost && !isBlocked && !competitorUrls.find(c => c.includes(compHost))) {
-                        competitorUrls.push(compHost);
-                    }
-                } catch (_) { /* skip */ }
+            const altSlug = productName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            const altRes = await fetch(`https://alternativeto.net/software/${altSlug}/`, {
+                headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SEOMancer/1.0)', 'Accept': 'text/html' },
+                signal: AbortSignal.timeout(8000),
             });
-        } catch (e) {
-            console.error('DDG search failed:', e.message);
+            if (altRes.ok) {
+                const altHtml = await altRes.text();
+                const $alt = cheerio.load(altHtml);
+
+                // Fix 2: Only pick competitor card links (they appear inside the main listing area),
+                // not navigation/footer. We limit to first 20 unique slugs found.
+                const seenSlugs = new Set([altSlug]);
+                $alt('a[href^="/software/"]').each((_, el) => {
+                    if (competitorSlugs.length >= 20) return false; // stop early
+                    const href = $alt(el).attr('href') || '';
+                    const match = href.match(/^\/software\/([^/?#]+)/);
+                    if (!match) return;
+                    const slug = match[1].toLowerCase();
+                    if (seenSlugs.has(slug)) return;
+                    seenSlugs.add(slug);
+                    competitorSlugs.push(slug);
+                    // Guess domain — prefer .com first, .io second (common for SaaS)
+                    for (const tld of ['.com', '.io', '.co', '.app', '.dev', '.ai']) {
+                        const guessedHost = slug + tld;
+                        if (!isBlocked(guessedHost) && !competitorUrls.includes(guessedHost)) {
+                            competitorUrls.push(guessedHost);
+                            break;
+                        }
+                    }
+                });
+            }
+        } catch (_) { /* fall through */ }
+
+        // ── Strategy 2: Targeted DuckDuckGo ─────────────────────────────────────
+        // Fix 3: Always run DDG as supplement; not only when AlternativeTo gives < 3 URL guesses
+        // (those guesses might all fail to resolve). Run if < 8 total guesses.
+        if (competitorUrls.length < 8) {
+            const descNiche = metaDescription.split(/\s+/).slice(0, 8).join(' ');
+            const queries = [
+                `"${productName}" alternatives similar tools -site:${userHost}`,
+                `best ${descNiche} software alternatives competitors`,
+                `tools similar to ${productName} ${userHost.split('.')[0]}`,
+            ];
+
+            for (const q of queries) {
+                if (competitorUrls.length >= 12) break;
+                try {
+                    const ddgRes = await fetch(
+                        `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`,
+                        { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SEOMancer/1.0)', 'Accept': 'text/html' }, signal: AbortSignal.timeout(7000) }
+                    );
+                    const ddgHtml = await ddgRes.text();
+                    const $ddg = cheerio.load(ddgHtml);
+
+                    $ddg('.result__url, .result__a').each((_, el) => {
+                        const rawHref = $ddg(el).attr('href') || $ddg(el).text();
+                        let parsed = rawHref;
+                        try {
+                            const u = new URL(rawHref.startsWith('//') ? 'https:' + rawHref : rawHref);
+                            const uddg = u.searchParams.get('uddg');
+                            if (uddg) parsed = decodeURIComponent(uddg);
+                        } catch (_) { /* use raw */ }
+
+                        try {
+                            const compHost = new URL(parsed.startsWith('http') ? parsed : 'https://' + parsed).hostname.replace('www.', '');
+                            // Only allow clean root SaaS domains (no subdomains, no blog./docs./news.)
+                            const looksLikeProduct = /^[a-z0-9][a-z0-9-]+\.[a-z]{2,6}$/.test(compHost)
+                                && !compHost.startsWith('blog.')
+                                && !compHost.startsWith('docs.')
+                                && !compHost.startsWith('news.')
+                                && !compHost.startsWith('help.')
+                                && !compHost.startsWith('support.');
+                            if (compHost && compHost !== userHost && !isBlocked(compHost) && looksLikeProduct && !competitorUrls.includes(compHost)) {
+                                competitorUrls.push(compHost);
+                            }
+                        } catch (_) { /* skip */ }
+                    });
+                } catch (_) { /* ignore */ }
+            }
         }
 
-        competitorUrls = [...new Set(competitorUrls)].slice(0, 10);
+        competitorUrls = [...new Set(competitorUrls)].slice(0, 14);
 
-        // For each competitor, fetch their page and extract meta tags + SEO signals
+        // ── Fetch & score each candidate ────────────────────────────────────────
+        const seenResolvedHosts = new Set(); // Fix 4: dedup by actual resolved canonical host
         const competitorData = await Promise.allSettled(
             competitorUrls.map(async (compHost) => {
-                try {
-                    const compRes = await fetch(`https://${compHost}`, {
-                        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SEOMancer/1.0)' },
-                        signal: AbortSignal.timeout(6000),
-                    });
-                    const compHtml = await compRes.text();
-                    const $c = cheerio.load(compHtml);
+                const baseName = compHost.replace(/\.(com|io|co|app|dev|ai)$/, '');
+                const tryUrls = [
+                    `https://${compHost}`,
+                    `https://${baseName}.io`,
+                    `https://${baseName}.com`,
+                    `https://${baseName}.ai`,
+                    `https://${baseName}.dev`,
+                ];
+                for (const tryUrl of tryUrls) {
+                    try {
+                        const compRes = await fetch(tryUrl, {
+                            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SEOMancer/1.0)' },
+                            signal: AbortSignal.timeout(6000),
+                        });
+                        if (!compRes.ok) continue;
+                        const compHtml = await compRes.text();
+                        const $c = cheerio.load(compHtml);
 
-                    const compTitle = $c('title').text().trim() || '';
-                    const compDesc = $c('meta[name="description"]').attr('content') || '';
-                    const compKwContent = $c('meta[name="keywords"]').attr('content') || '';
-                    const compKws = [...new Set(compKwContent.split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 2))].slice(0, 5);
+                        // Fix 4: Skip if we've already seen this resolved host (avoids .com/.io duplicates)
+                        const resolvedHost = new URL(compRes.url).hostname.replace('www.', '');
+                        if (seenResolvedHosts.has(resolvedHost) || resolvedHost === userHost) return null;
+                        seenResolvedHosts.add(resolvedHost);
 
-                    // Quick score for the competitor
-                    let cScore = 100;
-                    if (!compTitle || compTitle.length < 50 || compTitle.length > 60) cScore -= 10;
-                    if (!compDesc || compDesc.length < 120 || compDesc.length > 160) cScore -= 10;
-                    if (!$c('link[rel="canonical"]').attr('href')) cScore -= 5;
-                    if (!$c('meta[name="viewport"]').attr('content')) cScore -= 15;
-                    if (!compRes.url.startsWith('https://')) cScore -= 15;
-                    const cH1 = $c('h1').length;
-                    if (cH1 !== 1) cScore -= 10;
+                        const compTitle = $c('title').text().trim() || '';
+                        const compDesc = $c('meta[name="description"]').attr('content') || '';
+                        const compKwContent = $c('meta[name="keywords"]').attr('content') || '';
+                        const compKws = [...new Set(compKwContent.split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 2))].slice(0, 5);
 
-                    return {
-                        url: compHost,
-                        score: Math.max(0, cScore),
-                        topKeywords: compKws.length > 0 ? compKws : []
-                    };
-                } catch (_) {
-                    return null;
+                        let cScore = 100;
+                        if (!compTitle || compTitle.length < 50 || compTitle.length > 60) cScore -= 10;
+                        if (!compDesc || compDesc.length < 120 || compDesc.length > 160) cScore -= 10;
+                        if (!$c('link[rel="canonical"]').attr('href')) cScore -= 5;
+                        if (!$c('meta[name="viewport"]').attr('content')) cScore -= 15;
+                        if (!compRes.url.startsWith('https://')) cScore -= 15;
+                        if ($c('h1').length !== 1) cScore -= 10;
+
+                        // Fix 5: Store the full verified URL so the UI can link to it
+                        const resolvedUrl = `https://${resolvedHost}`;
+                        return { url: resolvedHost, resolvedUrl, score: Math.max(0, cScore), topKeywords: compKws };
+                    } catch (_) { /* try next TLD */ }
                 }
+                return null;
             })
         );
 
         const liveCompetitors = competitorData
-            .filter(r => r.status === 'fulfilled' && r.value !== null && r.value.topKeywords && r.value.topKeywords.length > 0)
-            .map(r => r.value);
+            .filter(r => r.status === 'fulfilled' && r.value !== null)
+            .map(r => r.value)
+            .filter(c => c.url !== userHost);
 
-        // Blend in the user's site and rank
-        const userEntry = { url: new URL(url).hostname.replace('www.', ''), score, isUser: true, topKeywords: suggestedKeywords.slice(0, 5).map(k => k.word) };
+        // ── Rank: merge user + competitors, sort by score descending ───────────
+        const userEntry = {
+            url: userHost,
+            resolvedUrl: url.startsWith('http') ? url : `https://${userHost}`,
+            score,
+            isUser: true,
+            topKeywords: suggestedKeywords.slice(0, 5).map(k => k.word)
+        };
         const allCompetitors = [...liveCompetitors, userEntry];
         allCompetitors.sort((a, b) => b.score - a.score);
 
         const userIndex = allCompetitors.findIndex(c => c.isUser);
+        const top5 = allCompetitors.slice(0, 5);
+        const userInTop5 = top5.some(c => c.isUser);
 
         let finalCompetitors = [];
-        if (userIndex < 10) {
-            finalCompetitors = allCompetitors.slice(0, userIndex + 1);
+        if (userInTop5) {
+            finalCompetitors = top5;
         } else {
-            finalCompetitors = allCompetitors.slice(0, 10);
+            finalCompetitors = [...top5, { ...userEntry, rank: userIndex + 1 }];
         }
+
+
 
         const result = {
             score,
             url,
-            keywords: suggestedKeywords.slice(0, 5),
+            iframeBlocked,
+            screenshotUrl,
+            foundKeywords: foundKeywords.slice(0, 10),
+            suggestedKeywords: suggestedKeywords.slice(0, 10),
             competitors: finalCompetitors,
             data: {
                 loadTime: (fetchTime / 1000).toFixed(2) + 's',

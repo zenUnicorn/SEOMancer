@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Search, Loader2, Sparkles, Copy, Check, Link as LinkIcon, FileText, BarChart, Tag, Lightbulb, ExternalLink, ArrowUpRight, ArrowRight, ShieldCheck, Zap } from "lucide-react";
+import { Globe, Search, Loader2, Sparkles, Copy, Check, Link as LinkIcon, FileText, BarChart, Tag, Lightbulb, ExternalLink, ArrowUpRight, ArrowRight, ShieldCheck, Zap, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 export default function ScanPage() {
@@ -53,7 +53,10 @@ export default function ScanPage() {
       setScanResult({
         url: data.url,
         score: data.score,
-        keywords: data.keywords,
+        iframeBlocked: data.iframeBlocked,
+        screenshotUrl: data.screenshotUrl,
+        foundKeywords: data.foundKeywords,
+        suggestedKeywords: data.suggestedKeywords,
         competitors: data.competitors,
         data: data.data,
         details: data.details
@@ -83,7 +86,7 @@ export default function ScanPage() {
           score: scanResult.score,
           title: scanResult.details?.title?.value || '',
           metaDesc: scanResult.details?.metaDesc?.value || '',
-          keywords: scanResult.keywords?.map(k => k.word) || [],
+          keywords: (scanResult.foundKeywords?.map(k => k.word) || []).concat(scanResult.suggestedKeywords?.map(k => k.word) || []),
           h1Count: scanResult.details?.h1Count?.value || 0,
           hasViewport: scanResult.details?.mobileCheck?.status || false,
           isSecure: scanResult.details?.isSecure?.status || false,
@@ -183,7 +186,7 @@ export default function ScanPage() {
                   ) : (
                     <>
                       <Search className="w-5 h-5" />
-                      Scan Target
+                      Scan
                     </>
                   )}
                 </button>
@@ -219,58 +222,158 @@ export default function ScanPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 gap-6 flex-1">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
 
-                {/* Core Web Data */}
-                <div className="bg-white rounded-[24px] p-5 border border-gray-200 shadow-sm flex flex-col gap-3 lg:col-span-1 xl:col-span-1 h-auto self-start">
-                  <div className="flex items-center gap-2 mb-1">
-                    <BarChart className="w-4 h-4 text-gray-400" />
-                    <h3 className="text-sm font-bold text-gray-900 font-heading">Core Web Data</h3>
+                {/* Left Side (Core Web Data + Competitors) */}
+                <div className="flex flex-col gap-6 lg:col-span-4 xl:col-span-3">
+
+                  {/* Core Web Data */}
+                  <div className="bg-white rounded-[24px] p-5 border border-gray-200 shadow-sm flex flex-col gap-3 h-auto w-full">
+                    <div className="flex items-center gap-2 mb-1">
+                      <BarChart className="w-4 h-4 text-gray-400" />
+                      <h3 className="text-sm font-bold text-gray-900 font-heading">Core Web Data</h3>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {[
+                        {
+                          label: 'Load Time',
+                          value: scanResult.data.loadTime,
+                          desc: 'The speed at which the server completes the initial HTML payload. A faster load time heavily boosts SEO rankings and retains users.'
+                        },
+                        {
+                          label: 'Mobile',
+                          value: scanResult.data.mobileReady,
+                          desc: 'Checks if a standard meta viewport tag exists. Google highly prioritizes mobile-friendly pages in its search indexing algorithms.'
+                        },
+                        {
+                          label: 'SSL Secure',
+                          value: scanResult.data.https || 'N/A',
+                          desc: 'Confirms if traffic is encrypted over HTTPS. Websites without an active SSL certificate are actively penalized in search visibility.'
+                        },
+                        {
+                          label: 'H1 Count',
+                          value: scanResult.data.h1Check || '0',
+                          desc: 'Having exactly one highly-relevant H1 header on the page explicitly signals your direct topic to ranking web crawlers.'
+                        },
+                        {
+                          label: 'Images Alt',
+                          value: scanResult.data.imagesAlt || 'N/A',
+                          desc: 'Alt tags provide context for visual media. Search engines use this textual data to rank your images inside image search directly.'
+                        },
+                      ].map(({ label, value, desc }) => (
+                        <details key={label} className="group bg-gray-50 rounded-xl border border-gray-100 overflow-hidden marker:content-[''] [&::-webkit-details-marker]:hidden">
+                          <summary className="flex items-center justify-between p-2.5 cursor-pointer outline-none hover:bg-gray-100 transition-colors list-none gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider truncate shrink">{label}</span>
+                              <ChevronDown className="w-3 h-3 text-gray-400 shrink-0 group-open:rotate-180 transition-transform duration-200" />
+                            </div>
+                            <div className={`flex items-center justify-center shrink-0 min-w-max px-2.5 py-1 rounded-full ${/good|secure|verified|optimized|yes/i.test(value)
+                              ? 'bg-green-100 text-green-700'
+                              : /missing|insecure|no|0 tag|error/i.test(value)
+                                ? 'bg-red-100 text-red-600'
+                                : /needs|work|slow|warn/i.test(value)
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}>
+                              <span className="text-[10px] font-black whitespace-nowrap leading-none">{value}</span>
+                            </div>
+                          </summary>
+                          <div className="px-3 pb-3 text-[10px] text-gray-500 font-medium leading-relaxed border-t border-gray-100 pt-2">
+                            {desc}
+                          </div>
+                        </details>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Load Time</span>
-                      <span className="text-xs font-bold text-black">{scanResult.data.loadTime}</span>
+
+                  {/* Competitor Analysis Box */}
+                  <details open className="group bg-white rounded-[24px] p-5 border border-gray-200 shadow-sm h-max w-full outline-none marker:content-[''] [&::-webkit-details-marker]:hidden cursor-pointer transition-colors">
+                    <summary className="flex justify-between items-center outline-none list-none mb-3">
+                      <div className="flex items-center gap-2 text-gray-400">
+                        <Globe className="w-4 h-4" />
+                        <h3 className="text-sm font-bold text-gray-900 font-heading">Similar Websites</h3>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform duration-200" />
+                    </summary>
+
+                    <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-gray-100">
+                      {scanResult.competitors?.length > 0 ? scanResult.competitors.slice(0, 6).map((comp, i) => (
+                        <a
+                          key={i}
+                          href={comp.isUser ? (comp.resolvedUrl || `https://${comp.url}`) : (comp.resolvedUrl || `https://${comp.url}`)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex justify-between items-center p-3 rounded-xl border transition-colors group ${comp.isUser ? 'bg-black border-black text-white' : 'bg-gray-50 border-gray-100 hover:border-gray-300 hover:bg-gray-100'}`}
+                        >
+                          <span className={`text-[11px] font-bold truncate mr-2 flex items-center gap-1.5 ${comp.isUser ? 'text-white' : 'text-gray-600 group-hover:text-black'}`}>
+                            <span className={`text-[10px] font-black ${comp.isUser ? 'text-gray-300' : 'text-gray-400'}`}>{i + 1}.</span>
+                            {comp.url}
+                            {comp.isUser && <span className="text-[9px] bg-white text-black px-1.5 py-0.5 rounded-full font-black ml-1">You</span>}
+                            {comp.rank && !comp.isUser && <span className="text-[9px] text-gray-400 ml-1">#{comp.rank}</span>}
+                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className={`text-xs font-black ${comp.score <= 50 ? 'text-red-500' : comp.score <= 70 ? 'text-yellow-500' : 'text-green-500'}`}>{comp.score}</span>
+                            <ExternalLink size={10} className={comp.isUser ? 'text-gray-400' : 'text-gray-300 group-hover:text-gray-500'} />
+                          </div>
+                        </a>
+                      )) : (
+                        <span className="text-xs text-gray-500 p-2 text-center font-medium">No competitors detected in niche</span>
+                      )}
                     </div>
-                    <div className="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Mobile</span>
-                      <span className="text-xs font-bold text-black">{scanResult.data.mobileReady}</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">SSL Secure</span>
-                      <span className="text-xs font-bold text-black">{scanResult.data.https || "N/A"}</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">H1 Count</span>
-                      <span className="text-xs font-bold text-black">{scanResult.data.h1Check || "0"}</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Images Alt</span>
-                      <span className="text-xs font-bold text-black">{scanResult.data.imagesAlt || "N/A"}</span>
-                    </div>
-                  </div>
+                  </details>
+
                 </div>
 
                 {/* Center Live Preview */}
-                <div className="bg-white rounded-[24px] border border-gray-200 shadow-sm flex flex-col items-center justify-center lg:col-span-2 xl:col-span-3 min-h-[400px] lg:min-h-[600px] overflow-hidden">
+                <div className="bg-white rounded-[24px] border border-gray-200 shadow-sm flex flex-col lg:col-span-5 xl:col-span-6 min-h-[400px] lg:min-h-[600px] overflow-hidden">
                   <div className="w-full bg-gray-50 border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
-                    <span className="text-xs font-bold text-gray-900 font-heading uppercase tracking-wider bg-white border border-gray-200 shadow-sm px-3 py-1.5 rounded-lg flex items-center gap-2">
-                      <Globe size={14} className="text-gray-400" /> Live Preview
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-gray-900 font-heading uppercase tracking-wider bg-white border border-gray-200 shadow-sm px-3 py-1.5 rounded-lg flex items-center gap-2">
+                        <Globe size={14} className="text-gray-400" /> {scanResult.iframeBlocked ? 'Screenshot' : 'Live Preview'}
+                      </span>
+                      {scanResult.iframeBlocked && (
+                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg">
+                          iframe blocked by site policy
+                        </span>
+                      )}
+                    </div>
                     <a href={scanResult.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-gray-500 hover:text-black flex items-center gap-1.5 transition-colors">
-                      <ExternalLink size={14} /> View Live source
+                      <ExternalLink size={14} /> View Live
                     </a>
                   </div>
-                  <iframe
-                    src={scanResult.url}
-                    title="Website Preview"
-                    className="w-full flex-1 bg-white border-none min-h-[400px]"
-                    sandbox="allow-same-origin allow-scripts"
-                  />
+
+                  {scanResult.iframeBlocked ? (
+                    // Screenshot fallback via Thum.io (free, no API key)
+                    <div className="relative flex-1 w-full min-h-[400px] overflow-hidden bg-gray-50">
+                      <img
+                        src={scanResult.screenshotUrl}
+                        alt={`Screenshot of ${scanResult.url}`}
+                        className="w-full h-full object-cover object-top"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                      <div className="absolute inset-0 hidden flex-col items-center justify-center gap-3 bg-gray-50">
+                        <Globe className="w-10 h-10 text-gray-300" />
+                        <p className="text-sm font-bold text-gray-500">Screenshot unavailable</p>
+                        <a href={scanResult.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold underline text-gray-400 hover:text-black">
+                          Visit {scanResult.url} directly →
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <iframe
+                      src={scanResult.url}
+                      title="Website Preview"
+                      className="w-full flex-1 bg-white border-none min-h-[400px]"
+                      sandbox="allow-same-origin allow-scripts"
+                    />
+                  )}
                 </div>
 
                 {/* Right Side (Score + Keywords) */}
-                <div className="flex flex-col gap-6 lg:col-span-1 xl:col-span-1">
+                <div className="flex flex-col gap-6 lg:col-span-3 xl:col-span-3">
 
                   {/* Score Box */}
                   <div className="bg-white rounded-[24px] p-6 border border-gray-200 shadow-sm flex flex-col items-center h-auto self-start w-full">
@@ -317,12 +420,34 @@ export default function ScanPage() {
                       <Tag className="w-4 h-4 text-gray-400" />
                       <h3 className="text-sm font-bold text-gray-900 font-heading">Keywords</h3>
                     </div>
-                    <div className="flex flex-wrap gap-2 content-start">
-                      {scanResult.keywords.map((kw, i) => (
-                        <span key={i} className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] text-gray-900 font-bold shadow-sm h-max">
-                          {kw.word}
-                        </span>
-                      ))}
+                    <div className="flex flex-col gap-5">
+                      {scanResult.foundKeywords?.length > 0 && (
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-gray-400 mb-2 block tracking-wider">Keywords found on the page</span>
+                          <div className="flex flex-wrap gap-2 max-h-[140px] overflow-y-auto pr-2 pb-1 content-start">
+                            {scanResult.foundKeywords.map((kw, i) => (
+                              <span key={i} className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] text-gray-900 font-bold shadow-sm h-max">
+                                {kw.word}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <span className="text-[10px] uppercase font-bold text-gray-400 mb-2 block tracking-wider">Suggested Keywords</span>
+                        <div className="flex flex-wrap gap-2 max-h-[160px] overflow-y-auto pr-2 pb-1 content-start">
+                          {scanResult.suggestedKeywords?.map((kw, i) => (
+                            <div key={`s-${i}`} className="flex items-center bg-gray-50 border border-gray-200 rounded-lg shadow-sm h-max overflow-hidden group">
+                              <span className="px-3 py-1.5 text-[10px] text-gray-900 font-bold border-r border-gray-200" title={kw.reason}>
+                                {kw.word}
+                              </span>
+                              <button onClick={() => copyToClipboard(kw.word, `kw-${i}`)} className="px-2 py-1.5 hover:bg-gray-200 transition-colors bg-white">
+                                {copied === `kw-${i}` ? <Check size={12} className="text-green-500" /> : <Copy size={12} className="text-gray-400 group-hover:text-black" />}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -470,7 +595,7 @@ export default function ScanPage() {
                     </div>
                     <div className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col justify-center shadow-sm">
                       <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Keywords</span>
-                      <span className="text-sm font-bold">{scanResult?.keywords?.length || 0} Anchors specificied</span>
+                      <span className="text-sm font-bold">{(scanResult?.foundKeywords?.length || 0) + (scanResult?.suggestedKeywords?.length || 0)} Total Anchors</span>
                     </div>
                     <div className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col justify-center shadow-sm col-span-2">
                       <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Advice to keep SEO Up-to-date</span>
@@ -499,6 +624,6 @@ export default function ScanPage() {
 
         </AnimatePresence>
       </div>
-    </div>
+    </div >
   );
 }

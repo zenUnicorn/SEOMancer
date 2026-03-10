@@ -6,29 +6,32 @@ const cache = new Map();
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 export async function POST(req) {
-    try {
-        const body = await req.json();
-        const { url, score, title, metaDesc, keywords, h1Count, hasViewport, isSecure, imagesWithoutAlt } = body;
+  try {
+    const body = await req.json();
+    const { url, score, title, metaDesc, keywords, h1Count, hasViewport, isSecure, imagesWithoutAlt } = body;
 
-        // Cache key based on what actually affects the suggestions
-        const cacheKey = `${url}::${score}`;
-        const cached = cache.get(cacheKey);
-        if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-            console.log('SEO Copilot: cache hit for', url);
-            return NextResponse.json(cached.data);
-        }
+    // Cache key based on what actually affects the suggestions
+    const cacheKey = `${url}::${score}`;
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      console.log('SEO Copilot: cache hit for', url);
+      return NextResponse.json(cached.data);
+    }
 
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey || apiKey === 'your_api_key_here') {
-            return NextResponse.json({ error: 'GEMINI_API_KEY is not configured in .env.local' }, { status: 500 });
-        }
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === 'your_api_key_here') {
+      return NextResponse.json({ error: 'GEMINI_API_KEY is not configured in .env.local' }, { status: 500 });
+    }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        // gemini-2.0-flash-lite has a higher free-tier RPM than the standard flash model
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    // Using gemini-2.0-flash-lite as requested by the user
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-lite',
+      generationConfig: { responseMimeType: 'application/json' }
+    });
 
 
-        const prompt = `
+    const prompt = `
 You are a senior SEO strategist. You are given a website's current SEO data below. 
 Your job is to return a structured JSON object with precise, actionable improvements.
 
@@ -72,33 +75,33 @@ The JSON must follow this exact structure:
 Be specific to this website's industry and content. Don't be generic. Make suggestions based on the actual data.
 `.trim();
 
-        const result = await model.generateContent(prompt);
-        const text = result.response.text().trim();
+    const result = await model.generateContent(prompt);
+    const text = result.response.text().trim();
 
-        // Strip markdown code fences if the model wraps its response
-        const clean = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+    // Strip markdown code fences if the model wraps its response
+    const clean = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
 
-        let parsed;
-        try {
-            parsed = JSON.parse(clean);
-        } catch {
-            return NextResponse.json({ error: 'AI returned an invalid format. Please try again.' }, { status: 500 });
-        }
-
-        // Store in cache for 10 minutes
-        cache.set(cacheKey, { data: parsed, timestamp: Date.now() });
-
-        return NextResponse.json(parsed);
-
-    } catch (err) {
-        console.error('SEO Copilot error:', err);
-
-        if (err.message?.includes('429')) {
-            return NextResponse.json({
-                error: "Rate limit reached on the free tier (15 req/min). Wait 60 seconds and try again — your next request will be cached for 10 minutes."
-            }, { status: 429 });
-        }
-
-        return NextResponse.json({ error: err.message || 'Internal error in SEO Copilot' }, { status: 500 });
+    let parsed;
+    try {
+      parsed = JSON.parse(clean);
+    } catch {
+      return NextResponse.json({ error: 'AI returned an invalid format. Please try again.' }, { status: 500 });
     }
+
+    // Store in cache for 10 minutes
+    cache.set(cacheKey, { data: parsed, timestamp: Date.now() });
+
+    return NextResponse.json(parsed);
+
+  } catch (err) {
+    console.error('SEO Copilot error:', err);
+
+    if (err.message?.includes('429')) {
+      return NextResponse.json({
+        error: "Rate limit reached on the free tier (15 req/min). Wait 60 seconds and try again — your next request will be cached for 10 minutes."
+      }, { status: 429 });
+    }
+
+    return NextResponse.json({ error: err.message || 'Internal error in SEO Copilot' }, { status: 500 });
+  }
 }
