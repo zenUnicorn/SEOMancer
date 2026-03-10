@@ -1,5 +1,63 @@
 import { NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
+import https from 'https';
+import http from 'http';
+import dns from 'dns';
+
+// Use Google + Cloudflare DNS — bypasses broken/restricted system resolver
+dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1', '1.0.0.1']);
+
+const AGENT_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (compatible; SEOMancer/1.0)',
+    'Accept': 'text/html,application/xhtml+xml',
+    'Cache-Control': 'no-cache',
+};
+
+async function httpGet(url, timeoutMs = 10000, redirectsLeft = 5) {
+    let parsed;
+    try { parsed = new URL(url); } catch (e) { throw e; }
+
+    let ip;
+    try {
+        const r = await dns.promises.lookup(parsed.hostname, { family: 4 });
+        ip = r.address;
+    } catch {
+        const e = new Error(`DNS failed for ${parsed.hostname}`); e.code = 'ENOTFOUND'; throw e;
+    }
+
+    return new Promise((resolve, reject) => {
+        const isHttps = parsed.protocol === 'https:';
+        const mod = isHttps ? https : http;
+        const agent = new (isHttps ? https.Agent : http.Agent)({ rejectUnauthorized: false });
+        const port = parsed.port ? Number(parsed.port) : (isHttps ? 443 : 80);
+        const path = (parsed.pathname || '/') + (parsed.search || '');
+
+        const req = mod.request(
+            { hostname: ip, port, path, method: 'GET', headers: { ...AGENT_HEADERS, Host: parsed.hostname }, agent },
+            (res) => {
+                if ([301,302,303,307,308].includes(res.statusCode) && res.headers.location && redirectsLeft > 0) {
+                    const loc = res.headers.location;
+                    const next = loc.startsWith('http') ? loc : `${parsed.protocol}//${parsed.host}${loc}`;
+                    res.resume();
+                    return resolve(httpGet(next, timeoutMs, redirectsLeft - 1));
+                }
+                let data = ''; res.setEncoding('utf8');
+                res.on('data', c => { data += c; });
+                res.on('end', () => resolve({
+                    ok: res.statusCode < 400,
+                    status: res.statusCode,
+                    url: url,
+                    text: () => Promise.resolve(data),
+                    headers: { get: k => res.headers[k.toLowerCase()] },
+                }));
+                res.on('error', reject);
+            }
+        );
+        req.setTimeout(timeoutMs, () => { req.destroy(); reject(new Error('Timeout')); });
+        req.on('error', reject);
+        req.end();
+    });
+}
 
 export async function POST(req) {
     try {
@@ -19,11 +77,7 @@ export async function POST(req) {
         // Fetch HTML
         let response;
         try {
-            response = await fetch(url, {
-                headers: {
-                    'User-Agent': 'SEOMancer-Bot/1.0',
-                },
-            });
+            response = await httpGet(url, 15000);
         } catch (error) {
             return NextResponse.json({ error: 'Failed to fetch the URL. Please check if it is correct.' }, { status: 400 });
         }
@@ -37,7 +91,6 @@ export async function POST(req) {
             xfo === 'DENY' ||
             xfo === 'SAMEORIGIN' ||
             (cspHeader.toLowerCase().includes('frame-ancestors') && !cspHeader.toLowerCase().includes('frame-ancestors *'));
-        // Thum.io: free screenshot service, no API key required
         const screenshotUrl = `https://image.thum.io/get/width/1280/crop/900/noanimate/${encodeURIComponent(url)}`;
         const html = await response.text();
         const $ = cheerio.load(html);
@@ -102,7 +155,7 @@ export async function POST(req) {
 
         try {
             baseUrl = new URL(url).origin;
-            const robotsRes = await fetch(`${baseUrl}/robots.txt`);
+            const robotsRes = await httpGet(`${baseUrl}/robots.txt`, 5000);
             if (robotsRes.ok) {
                 hasRobotsTxt = true;
                 const robotsText = await robotsRes.text();
@@ -251,19 +304,13 @@ export async function POST(req) {
         // ── Strategy 1: AlternativeTo.net (most accurate — manually curated) ──
         try {
             const altSlug = productName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-            const altRes = await fetch(`https://alternativeto.net/software/${altSlug}/`, {
-                headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SEOMancer/1.0)', 'Accept': 'text/html' },
-                signal: AbortSignal.timeout(8000),
-            });
+            const altRes = await httpGet(`https://alternativeto.net/software/${altSlug}/`, 8000);
             if (altRes.ok) {
                 const altHtml = await altRes.text();
                 const $alt = cheerio.load(altHtml);
-
-                // Fix 2: Only pick competitor card links (they appear inside the main listing area),
-                // not navigation/footer. We limit to first 20 unique slugs found.
                 const seenSlugs = new Set([altSlug]);
                 $alt('a[href^="/software/"]').each((_, el) => {
-                    if (competitorSlugs.length >= 20) return false; // stop early
+                    if (competitorSlugs.length >= 20) return false;
                     const href = $alt(el).attr('href') || '';
                     const match = href.match(/^\/software\/([^/?#]+)/);
                     if (!match) return;
@@ -271,7 +318,6 @@ export async function POST(req) {
                     if (seenSlugs.has(slug)) return;
                     seenSlugs.add(slug);
                     competitorSlugs.push(slug);
-                    // Guess domain — prefer .com first, .io second (common for SaaS)
                     for (const tld of ['.com', '.io', '.co', '.app', '.dev', '.ai']) {
                         const guessedHost = slug + tld;
                         if (!isBlocked(guessedHost) && !competitorUrls.includes(guessedHost)) {
@@ -297,9 +343,9 @@ export async function POST(req) {
             for (const q of queries) {
                 if (competitorUrls.length >= 12) break;
                 try {
-                    const ddgRes = await fetch(
+                    const ddgRes = await httpGet(
                         `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`,
-                        { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SEOMancer/1.0)', 'Accept': 'text/html' }, signal: AbortSignal.timeout(7000) }
+                        7000
                     );
                     const ddgHtml = await ddgRes.text();
                     const $ddg = cheerio.load(ddgHtml);
@@ -347,15 +393,11 @@ export async function POST(req) {
                 ];
                 for (const tryUrl of tryUrls) {
                     try {
-                        const compRes = await fetch(tryUrl, {
-                            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SEOMancer/1.0)' },
-                            signal: AbortSignal.timeout(6000),
-                        });
+                        const compRes = await httpGet(tryUrl, 6000);
                         if (!compRes.ok) continue;
                         const compHtml = await compRes.text();
                         const $c = cheerio.load(compHtml);
 
-                        // Fix 4: Skip if we've already seen this resolved host (avoids .com/.io duplicates)
                         const resolvedHost = new URL(compRes.url).hostname.replace('www.', '');
                         if (seenResolvedHosts.has(resolvedHost) || resolvedHost === userHost) return null;
                         seenResolvedHosts.add(resolvedHost);
@@ -373,7 +415,6 @@ export async function POST(req) {
                         if (!compRes.url.startsWith('https://')) cScore -= 15;
                         if ($c('h1').length !== 1) cScore -= 10;
 
-                        // Fix 5: Store the full verified URL so the UI can link to it
                         const resolvedUrl = `https://${resolvedHost}`;
                         return { url: resolvedHost, resolvedUrl, score: Math.max(0, cScore), topKeywords: compKws };
                     } catch (_) { /* try next TLD */ }

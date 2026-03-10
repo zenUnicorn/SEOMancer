@@ -1,14 +1,44 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Search, Loader2, Sparkles, Copy, Check, Link as LinkIcon, FileText, BarChart, Tag, Lightbulb, ExternalLink, ArrowUpRight, ArrowRight, ShieldCheck, Zap, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { Globe, Search, Loader2, Sparkles, Copy, Check, Link as LinkIcon, FileText, BarChart, Tag, Lightbulb, ExternalLink, ArrowUpRight, ArrowRight, ShieldCheck, Zap, ChevronDown, Activity, CheckCircle2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+
+const SCAN_STEPS = [
+  { icon: Globe,        text: 'Connecting to website…' },
+  { icon: FileText,     text: 'Parsing HTML structure…' },
+  { icon: Tag,          text: 'Reading meta tags & Open Graph…' },
+  { icon: Search,       text: 'Analysing heading hierarchy…' },
+  { icon: ShieldCheck,  text: 'Checking HTTPS & security signals…' },
+  { icon: BarChart,     text: 'Counting links & images…' },
+  { icon: Zap,          text: 'Running robots.txt & sitemap check…' },
+  { icon: Lightbulb,    text: 'Extracting keywords from headings…' },
+  { icon: Activity,     text: 'Computing SEO score…' },
+  { icon: Sparkles,     text: 'Finding similar websites…' },
+  { icon: CheckCircle2, text: 'Finalising report…' },
+];
 
 export default function ScanPage() {
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState("idle"); // idle, scanning, done, error
   const [scanResult, setScanResult] = useState(null);
   const [scanError, setScanError] = useState(null);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const stepRef = useRef(null);
+
+  // Animate loading steps while scanning
+  useEffect(() => {
+    if (status !== 'scanning') { clearInterval(stepRef.current); return; }
+    setLoadingStep(0); setProgress(0);
+    let step = 0;
+    stepRef.current = setInterval(() => {
+      step = Math.min(step + 1, SCAN_STEPS.length - 2); // stop one before last — API completes it
+      setLoadingStep(step);
+      setProgress(Math.round((step / (SCAN_STEPS.length - 1)) * 90)); // cap at 90% until done
+    }, 1800);
+    return () => clearInterval(stepRef.current);
+  }, [status]);
 
   // SEO Copilot state
   const [isCopiloting, setIsCopiloting] = useState(false);
@@ -45,11 +75,17 @@ export default function ScanPage() {
         body: JSON.stringify({ url: targetUrl }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        throw new Error('Analysis failed');
+        throw new Error(data?.error || 'Analysis failed. Please check the URL.');
       }
 
-      const data = await res.json();
+      clearInterval(stepRef.current);
+      setLoadingStep(SCAN_STEPS.length - 1);
+      setProgress(100);
+      await new Promise(r => setTimeout(r, 400));
+
       setScanResult({
         url: data.url,
         score: data.score,
@@ -62,12 +98,11 @@ export default function ScanPage() {
         details: data.details
       });
       setStatus("done");
-      setCurrentStep(1); // Proceed to Analyze Tab
-
-      // Reset copilot
+      setCurrentStep(1);
       setCopilotResult(null);
     } catch (error) {
-      setScanError("Failed to analyze URL. Is the URL valid?");
+      clearInterval(stepRef.current);
+      setScanError(error.message || "Failed to analyze URL. Is the URL valid?");
       setStatus("error");
     }
   };
@@ -151,46 +186,80 @@ export default function ScanPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="flex flex-1 items-center justify-center flex-col max-w-2xl mx-auto w-full"
             >
-              <div className="bg-white rounded-[32px] p-8 md:p-12 border border-gray-200 shadow-sm w-full flex flex-col items-center text-center gap-6">
-                <div className="w-20 h-20 bg-gray-50 rounded-full border border-gray-100 flex items-center justify-center shadow-inner">
-                  <Globe className="w-8 h-8 text-black" />
+              {/* ── Loading overlay (shown while scanning) ── */}
+              {status === 'scanning' ? (
+                <div className="bg-white rounded-[32px] p-8 md:p-12 border border-gray-200 shadow-sm w-full flex flex-col items-center text-center gap-6">
+                  {/* Animated icon */}
+                  <div className="w-16 h-16 rounded-2xl bg-gray-900 text-white flex items-center justify-center animate-pulse">
+                    {(() => { const S = SCAN_STEPS[loadingStep]?.icon || Activity; return <S className="w-8 h-8" />; })()}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold font-heading mb-1">Scanning website…</h2>
+                    <p className="text-sm text-gray-500 font-medium transition-all duration-500">{SCAN_STEPS[loadingStep]?.text}</p>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full flex flex-col gap-2">
+                    <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                      <div
+                        className="h-full bg-gray-900 rounded-full transition-all duration-700 ease-out"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400 font-bold">
+                      <span className="truncate max-w-[60%]">{url}</span>
+                      <span>{progress}%</span>
+                    </div>
+                  </div>
+                  {/* Activity log */}
+                  <div className="flex flex-col gap-1.5 w-full text-left">
+                    {SCAN_STEPS.slice(0, loadingStep + 1).map((step, i) => {
+                      const Icon = step.icon;
+                      return (
+                        <div key={i} className={`flex items-center gap-2 text-xs font-medium transition-all duration-300 ${i === loadingStep ? 'text-gray-900' : 'text-gray-400'}`}>
+                          <Icon className={`w-3.5 h-3.5 shrink-0 ${i < loadingStep ? 'text-green-500' : 'text-gray-400'}`} />
+                          {i < loadingStep
+                            ? <span className="line-through">{step.text}</span>
+                            : <span className="font-bold">{step.text}</span>
+                          }
+                          {i < loadingStep && <CheckCircle2 className="w-3 h-3 text-green-500 ml-auto shrink-0" />}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-2xl font-bold font-heading mb-2">Target Link</h2>
-                  <p className="text-gray-500 text-sm">Enter the specific URL you wish to analyze.</p>
-                </div>
+              ) : (
+                <div className="bg-white rounded-[32px] p-8 md:p-12 border border-gray-200 shadow-sm w-full flex flex-col items-center text-center gap-6">
+                  <div className="w-20 h-20 bg-gray-50 rounded-full border border-gray-100 flex items-center justify-center shadow-inner">
+                    <Globe className="w-8 h-8 text-black" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold font-heading mb-2">Target Link</h2>
+                    <p className="text-gray-500 text-sm">Enter the specific URL you wish to analyze.</p>
+                  </div>
 
-                <div className="w-full mt-2">
-                  <input
-                    type="text"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleScan(e); }}
-                    placeholder="https://example.com"
-                    className="w-full border-2 border-gray-100 bg-gray-50 rounded-2xl px-6 py-4 text-center text-base focus:outline-none focus:border-black transition-colors disabled:opacity-50 font-medium"
-                    disabled={status === 'scanning'}
-                  />
-                  {scanError && <p className="text-red-500 text-xs mt-3 font-semibold">{scanError}</p>}
-                </div>
+                  <div className="w-full mt-2">
+                    <input
+                      type="text"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleScan(e); }}
+                      placeholder="https://example.com"
+                      className="w-full border-2 border-gray-100 bg-gray-50 rounded-2xl px-6 py-4 text-center text-base focus:outline-none focus:border-black transition-colors disabled:opacity-50 font-medium"
+                      disabled={status === 'scanning'}
+                    />
+                    {scanError && <p className="text-red-500 text-xs mt-3 font-semibold">{scanError}</p>}
+                  </div>
 
-                <button
-                  onClick={handleScan}
-                  disabled={status === 'scanning' || !url.trim()}
-                  className="w-full py-4 mt-2 bg-black text-white text-base font-bold rounded-2xl hover:bg-gray-800 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-md active:scale-[0.98]"
-                >
-                  {status === 'scanning' ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Scanning & Analyzing Data...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-5 h-5" />
-                      Scan
-                    </>
-                  )}
-                </button>
-              </div>
+                  <button
+                    onClick={handleScan}
+                    disabled={status === 'scanning' || !url.trim()}
+                    className="w-full py-4 mt-2 bg-black text-white text-base font-bold rounded-2xl hover:bg-gray-800 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-md active:scale-[0.98]"
+                  >
+                    <Search className="w-5 h-5" />
+                    Scan
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
 
