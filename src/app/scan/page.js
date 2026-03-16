@@ -146,7 +146,7 @@ export default function ScanPage() {
   const strokeDashoffset = arcLength - (score / 100) * arcLength;
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#fafafa] text-gray-900 border-l border-gray-200 relative overflow-y-auto w-full p-6 md:p-10">
+    <div className="flex flex-col min-h-screen bg-[#f5f5f7] dark:bg-[#0f0f12] text-gray-900 dark:text-gray-100 border-l border-gray-200 dark:border-gray-800 relative overflow-y-auto w-full p-6 md:p-10">
 
       {/* Top Stepper Bar */}
       <div className="w-full max-w-5xl mx-auto flex items-center justify-center gap-2 md:gap-4 mb-8 overflow-x-auto pb-2">
@@ -155,9 +155,9 @@ export default function ScanPage() {
           const isDone = currentStep > idx;
           const icon = idx === 0 ? <LinkIcon size={14} /> : idx === 1 ? <Search size={14} /> : idx === 2 ? <Sparkles size={14} /> : <FileText size={14} />;
 
-          let stateClasses = "text-gray-400 bg-white border-gray-100"; // default
-          if (isDone) stateClasses = "text-black bg-white border-gray-200 font-semibold shadow-sm";
-          else if (isActive) stateClasses = "text-black bg-gray-100 border-gray-200 font-semibold shadow-sm ring-2 ring-gray-200 ring-offset-2";
+          let stateClasses = "text-gray-400 bg-white dark:bg-[#1e1e28] border-gray-100 dark:border-gray-700"; // default
+          if (isDone) stateClasses = "text-black dark:text-white bg-white dark:bg-[#1e1e28] border-gray-200 dark:border-gray-600 font-semibold shadow-sm";
+          else if (isActive) stateClasses = "text-black dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 font-semibold shadow-sm ring-2 ring-gray-200 dark:ring-gray-700 ring-offset-2 dark:ring-offset-gray-900";
 
           return (
             <div key={idx} className="flex items-center gap-2 md:gap-4 shrink-0 transition-all">
@@ -166,8 +166,8 @@ export default function ScanPage() {
                 {step}
               </div>
               {idx < 3 && (
-                <div className="w-8 md:w-16 h-[3px] bg-gray-200 rounded-full overflow-hidden">
-                  <div className={`h-full bg-black transition-all duration-500 ease-out fill-mode-forwards ${isDone ? 'w-full' : 'w-0'}`} />
+                <div className="w-8 md:w-16 h-[3px] bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className={`h-full bg-black dark:bg-white transition-all duration-500 ease-out fill-mode-forwards ${isDone ? 'w-full' : 'w-0'}`} />
                 </div>
               )}
             </div>
@@ -188,7 +188,7 @@ export default function ScanPage() {
             >
               {/* ── Loading overlay (shown while scanning) ── */}
               {status === 'scanning' ? (
-                <div className="bg-white rounded-[32px] p-8 md:p-12 border border-gray-200 shadow-sm w-full flex flex-col items-center text-center gap-6">
+                <div className="bg-white dark:bg-[#1e1e28] rounded-[32px] p-8 md:p-12 border border-gray-200 dark:border-gray-700 shadow-sm w-full flex flex-col items-center text-center gap-6">
                   {/* Animated icon */}
                   <div className="w-16 h-16 rounded-2xl bg-gray-900 text-white flex items-center justify-center animate-pulse">
                     {(() => { const S = SCAN_STEPS[loadingStep]?.icon || Activity; return <S className="w-8 h-8" />; })()}
@@ -228,7 +228,7 @@ export default function ScanPage() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-[32px] p-8 md:p-12 border border-gray-200 shadow-sm w-full flex flex-col items-center text-center gap-6">
+                <div className="bg-white dark:bg-[#1e1e28] rounded-[32px] p-8 md:p-12 border border-gray-200 dark:border-gray-700 shadow-sm w-full flex flex-col items-center text-center gap-6">
                   <div className="w-20 h-20 bg-gray-50 rounded-full border border-gray-100 flex items-center justify-center shadow-inner">
                     <Globe className="w-8 h-8 text-black" />
                   </div>
@@ -244,7 +244,7 @@ export default function ScanPage() {
                       onChange={(e) => setUrl(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleScan(e); }}
                       placeholder="https://example.com"
-                      className="w-full border-2 border-gray-100 bg-gray-50 rounded-2xl px-6 py-4 text-center text-base focus:outline-none focus:border-black transition-colors disabled:opacity-50 font-medium"
+                      className="w-full border-2 border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-2xl px-6 py-4 text-center text-base focus:outline-none focus:border-gray-900 dark:focus:border-gray-400 transition-colors disabled:opacity-50 font-medium"
                       disabled={status === 'scanning'}
                     />
                     {scanError && <p className="text-red-500 text-xs mt-3 font-semibold">{scanError}</p>}
@@ -273,7 +273,7 @@ export default function ScanPage() {
               className="flex flex-col gap-6 h-full"
             >
               {/* Action Bar */}
-              <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-gray-200 rounded-2xl p-4 shadow-sm gap-4">
+              <div className="flex flex-col md:flex-row items-center justify-between bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-2xl p-4 shadow-sm gap-4">
                 <div className="flex items-center gap-3">
                   <ShieldCheck className="text-black w-6 h-6" />
                   <div>
@@ -297,7 +297,7 @@ export default function ScanPage() {
                 <div className="flex flex-col gap-6 lg:col-span-4 xl:col-span-3">
 
                   {/* Core Web Data */}
-                  <div className="bg-white rounded-[24px] p-5 border border-gray-200 shadow-sm flex flex-col gap-3 h-auto w-full">
+                  <div className="bg-white dark:bg-[#1e1e28] rounded-[24px] p-5 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col gap-3 h-auto w-full">
                     <div className="flex items-center gap-2 mb-1">
                       <BarChart className="w-4 h-4 text-gray-400" />
                       <h3 className="text-sm font-bold text-gray-900 font-heading">Core Web Data</h3>
@@ -356,7 +356,7 @@ export default function ScanPage() {
                   </div>
 
                   {/* Competitor Analysis Box */}
-                  <details open className="group bg-white rounded-[24px] p-5 border border-gray-200 shadow-sm h-max w-full outline-none marker:content-[''] [&::-webkit-details-marker]:hidden cursor-pointer transition-colors">
+                  <details open className="group bg-white dark:bg-[#1e1e28] rounded-[24px] p-5 border border-gray-200 dark:border-gray-700 shadow-sm h-max w-full outline-none marker:content-[''] [&::-webkit-details-marker]:hidden cursor-pointer transition-colors">
                     <summary className="flex justify-between items-center outline-none list-none mb-3">
                       <div className="flex items-center gap-2 text-gray-400">
                         <Globe className="w-4 h-4" />
@@ -394,7 +394,7 @@ export default function ScanPage() {
                 </div>
 
                 {/* Center Live Preview */}
-                <div className="bg-white rounded-[24px] border border-gray-200 shadow-sm flex flex-col lg:col-span-5 xl:col-span-6 min-h-[400px] lg:min-h-[600px] overflow-hidden">
+                <div className="bg-white dark:bg-[#1e1e28] rounded-[24px] border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col lg:col-span-5 xl:col-span-6 min-h-[400px] lg:min-h-[600px] overflow-hidden">
                   <div className="w-full bg-gray-50 border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-gray-900 font-heading uppercase tracking-wider bg-white border border-gray-200 shadow-sm px-3 py-1.5 rounded-lg flex items-center gap-2">
@@ -445,7 +445,7 @@ export default function ScanPage() {
                 <div className="flex flex-col gap-6 lg:col-span-3 xl:col-span-3">
 
                   {/* Score Box */}
-                  <div className="bg-white rounded-[24px] p-6 border border-gray-200 shadow-sm flex flex-col items-center h-auto self-start w-full">
+                  <div className="bg-white dark:bg-[#1e1e28] rounded-[24px] p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col items-center h-auto self-start w-full">
                     <div className="w-full flex items-center gap-2 mb-6 text-gray-400">
                       <ArrowUpRight className="w-4 h-4" />
                       <h3 className="text-sm font-bold text-gray-900 font-heading">SEO Score</h3>
@@ -484,7 +484,7 @@ export default function ScanPage() {
                   </div>
 
                   {/* Keywords Box */}
-                  <div className="bg-white rounded-[24px] p-6 border border-gray-200 shadow-sm flex flex-col h-auto w-full">
+                  <div className="bg-white dark:bg-[#1e1e28] rounded-[24px] p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-auto w-full">
                     <div className="w-full flex items-center gap-2 mb-4">
                       <Tag className="w-4 h-4 text-gray-400" />
                       <h3 className="text-sm font-bold text-gray-900 font-heading">Keywords</h3>
@@ -534,7 +534,7 @@ export default function ScanPage() {
               exit={{ opacity: 0, x: -20 }}
               className="flex flex-col flex-1 items-center max-w-4xl mx-auto w-full gap-6"
             >
-              <div className="bg-white rounded-[32px] p-8 border border-gray-200 shadow-sm w-full min-h-[400px] flex flex-col">
+              <div className="bg-white dark:bg-[#1e1e28] rounded-[32px] p-8 border border-gray-200 dark:border-gray-700 shadow-sm w-full min-h-[400px] flex flex-col">
                 <div className="flex items-center justify-between mb-8 border-b border-gray-100 pb-6">
                   <div className="flex items-center gap-3">
                     <div className="p-3 bg-black text-white rounded-xl shadow-md">
@@ -644,7 +644,7 @@ export default function ScanPage() {
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col flex-1 items-center max-w-3xl mx-auto w-full gap-6"
             >
-              <div className="bg-white rounded-[32px] p-8 md:p-12 border border-gray-200 shadow-sm w-full flex flex-col items-center text-center">
+              <div className="bg-white dark:bg-[#1e1e28] rounded-[32px] p-8 md:p-12 border border-gray-200 dark:border-gray-700 shadow-sm w-full flex flex-col items-center text-center">
                 <div className="w-20 h-20 bg-black text-white rounded-full flex items-center justify-center shadow-lg mb-6">
                   <Check size={40} strokeWidth={3} />
                 </div>

@@ -432,12 +432,12 @@ export default function GapAnalysis() {
 
             {/* Header */}
             <div className="flex items-center gap-4">
-                <div className="bg-gray-900 p-3 rounded-2xl text-white">
+                <div className="bg-gray-900 dark:bg-white p-3 rounded-2xl text-white dark:text-gray-900">
                     <GitCompareArrows size={22} />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 font-heading">Gap Analysis</h1>
-                    <p className="text-sm text-gray-500 font-medium">Compare two websites side-by-side across 20+ SEO signals</p>
+                    <h1 className="text-2xl font-black text-gray-900 dark:text-white font-heading">Gap Analysis</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Compare two websites side-by-side across 20+ SEO signals</p>
                 </div>
                 {tab === 'results' && (
                     <div className="ml-auto flex gap-2">
@@ -489,23 +489,23 @@ export default function GapAnalysis() {
             {(tab === 'input') && (
                 <div className="flex flex-col items-center gap-8 flex-1 justify-center pb-16">
                     <div className="text-center">
-                        <h2 className="text-xl font-black text-gray-900 font-heading mb-2">Enter two websites to compare</h2>
-                        <p className="text-sm text-gray-500">We'll run a full SEO audit on both and give you a detailed side-by-side breakdown.</p>
+                        <h2 className="text-xl font-black text-gray-900 dark:text-white font-heading mb-2">Enter two websites to compare</h2>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">We'll run a full SEO audit on both and give you a detailed side-by-side breakdown.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-end w-full max-w-3xl">
                         {/* Site A */}
                         <div className="flex flex-col gap-2">
-                            <label className="text-xs font-black text-gray-500 uppercase tracking-wider">Website A</label>
+                            <label className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Website A</label>
                             <div className="relative">
-                                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                                 <input
                                     type="url"
                                     value={urlA}
                                     onChange={e => setUrlA(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && runAnalysis()}
                                     placeholder="https://example.com"
-                                    className="w-full pl-10 pr-4 py-4 bg-white border-2 border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-gray-900 transition-colors"
+                                    className="w-full pl-10 pr-4 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-2xl text-sm font-medium focus:outline-none focus:border-gray-900 dark:focus:border-gray-500 transition-colors"
                                 />
                             </div>
                         </div>
@@ -515,16 +515,16 @@ export default function GapAnalysis() {
 
                         {/* Site B */}
                         <div className="flex flex-col gap-2">
-                            <label className="text-xs font-black text-gray-500 uppercase tracking-wider">Website B</label>
+                            <label className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Website B</label>
                             <div className="relative">
-                                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                                 <input
                                     type="url"
                                     value={urlB}
                                     onChange={e => setUrlB(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && runAnalysis()}
                                     placeholder="https://competitor.com"
-                                    className="w-full pl-10 pr-4 py-4 bg-white border-2 border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-gray-900 transition-colors"
+                                    className="w-full pl-10 pr-4 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-2xl text-sm font-medium focus:outline-none focus:border-gray-900 dark:focus:border-gray-500 transition-colors"
                                 />
                             </div>
                         </div>
@@ -540,7 +540,7 @@ export default function GapAnalysis() {
                     <div className="flex flex-col items-center justify-center gap-3">
                         <button
                             onClick={runAnalysis}
-                            className="px-10 py-4 bg-gray-900 text-white font-black text-sm rounded-2xl hover:bg-black transition-all shadow-lg shadow-gray-200 flex items-center gap-2 hover:gap-3"
+                            className="px-10 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-black text-sm rounded-2xl hover:bg-black dark:hover:bg-gray-100 transition-all shadow-lg shadow-gray-200 dark:shadow-none flex items-center gap-2 hover:gap-3"
                         >
                             Run Gap Analysis <ArrowRight className="w-4 h-4" />
                         </button>
