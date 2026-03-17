@@ -487,13 +487,17 @@ export default function GapAnalysis() {
 
             {/* ── TAB: INPUT ──────────────────────────────────────────── */}
             {(tab === 'input') && (
-                <div className="flex flex-col items-center gap-8 flex-1 justify-center pb-16">
-                    <div className="text-center">
-                        <h2 className="text-xl font-black text-gray-900 dark:text-white font-heading mb-2">Enter two websites to compare</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">We'll run a full SEO audit on both and give you a detailed side-by-side breakdown.</p>
-                    </div>
+                <div className="flex flex-col items-center flex-1 justify-center pb-16 w-full max-w-4xl mx-auto">
+                    <div className="bg-white dark:bg-[#121316] rounded-[32px] p-8 md:p-12 border border-gray-200 dark:border-gray-800 shadow-xl w-full flex flex-col items-center gap-8 text-center animate-in fade-in zoom-in-95 duration-300">
+                        <div className="w-20 h-20 bg-gray-50 dark:bg-gray-900 rounded-full border border-gray-100 dark:border-gray-800 flex items-center justify-center shadow-inner mb-2">
+                            <GitCompareArrows className="w-10 h-10 text-gray-900 dark:text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white font-heading mb-3">Compare two websites</h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-lg mx-auto leading-relaxed">We&apos;ll run a full SEO audit on both and give you a detailed side-by-side breakdown.</p>
+                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-end w-full max-w-3xl">
+                        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-end w-full mt-4">
                         {/* Site A */}
                         <div className="flex flex-col gap-2">
                             <label className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Website A</label>
@@ -517,7 +521,7 @@ export default function GapAnalysis() {
                         <div className="flex flex-col gap-2">
                             <label className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Website B</label>
                             <div className="relative">
-                                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+                                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                 <input
                                     type="url"
                                     value={urlB}
@@ -537,37 +541,39 @@ export default function GapAnalysis() {
                         </div>
                     )}
 
-                    <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="flex flex-col items-center justify-center gap-3 w-full mt-4">
                         <button
                             onClick={runAnalysis}
-                            className="px-10 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-black text-sm rounded-2xl hover:bg-black dark:hover:bg-gray-100 transition-all shadow-lg shadow-gray-200 dark:shadow-none flex items-center gap-2 hover:gap-3"
+                            className="w-full max-w-md py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-black text-base rounded-2xl hover:bg-black dark:hover:bg-gray-200 transition-all shadow-md flex items-center justify-center gap-2 hover:gap-3"
                         >
-                            Run Gap Analysis <ArrowRight className="w-4 h-4" />
+                            Run Gap Analysis <ArrowRight className="w-5 h-5" />
                         </button>
                         <button
                             disabled
                             title="Coming soon"
-                            className="px-6 py-2.5 text-xs font-bold text-gray-400 border-2 border-dashed border-gray-200 rounded-xl cursor-not-allowed flex items-center gap-2 select-none"
+                            className="w-full max-w-md py-3 text-xs font-bold text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl cursor-not-allowed flex items-center justify-center gap-2 select-none"
                         >
                             Compare 3 or more websites
-                            <span className="bg-gray-100 text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider text-gray-500 font-black">Coming Soon</span>
+                            <span className="bg-gray-100 dark:bg-gray-900 text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider text-gray-500 font-black">Coming Soon</span>
                         </button>
+                    </div>
                     </div>
                 </div>
             )}
 
             {/* ── TAB: LOADING ────────────────────────────────────────── */}
             {tab === 'loading' && (
-                <div className="flex flex-col items-center gap-8 flex-1 justify-center pb-20">
+                <div className="flex flex-col items-center flex-1 justify-center pb-16 w-full max-w-4xl mx-auto">
+                    <div className="bg-white dark:bg-[#121316] rounded-[32px] p-8 md:p-12 border border-gray-200 dark:border-gray-800 shadow-xl w-full flex flex-col items-center gap-8 text-center animate-in fade-in zoom-in-95 duration-300">
                     <div className="flex flex-col items-center gap-2 text-center">
-                        <div className="w-16 h-16 rounded-2xl bg-gray-900 text-white flex items-center justify-center mb-2 animate-pulse">
+                        <div className="w-20 h-20 rounded-[24px] bg-gray-900 dark:bg-white text-white dark:text-gray-900 flex items-center justify-center mb-4 animate-pulse shadow-md">
                             {(() => {
                                 const Step = LOADING_STEPS[loadingStep]?.icon || Activity;
-                                return <Step className="w-8 h-8" />;
+                                return <Step className="w-10 h-10" />;
                             })()}
                         </div>
-                        <h2 className="text-xl font-black text-gray-900 font-heading">Analysing both sites…</h2>
-                        <p className="text-sm text-gray-500 font-medium max-w-sm transition-all duration-500">
+                        <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white font-heading">Analysing both sites…</h2>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium max-w-sm transition-all duration-500">
                             {LOADING_STEPS[loadingStep]?.text}
                         </p>
                     </div>
@@ -588,20 +594,21 @@ export default function GapAnalysis() {
                     </div>
 
                     {/* Activity list */}
-                    <div className="flex flex-col gap-1.5 w-full max-w-sm">
+                    <div className="flex flex-col gap-1.5 w-full max-w-sm text-left">
                         {LOADING_STEPS.slice(0, loadingStep + 1).map((step, i) => {
                             const Icon = step.icon;
                             return (
-                                <div key={i} className={`flex items-center gap-2 text-xs font-medium transition-all duration-300 ${i === loadingStep ? 'text-gray-900' : 'text-gray-400'}`}>
-                                    <Icon className={`w-3.5 h-3.5 shrink-0 ${i < loadingStep ? 'text-green-500' : 'text-gray-400'}`} />
+                                <div key={i} className={`flex items-center gap-2 text-xs font-medium transition-all duration-300 ${i === loadingStep ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-600'}`}>
+                                    <Icon className={`w-3.5 h-3.5 shrink-0 ${i < loadingStep ? 'text-green-500 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'}`} />
                                     {i < loadingStep
-                                        ? <span className="line-through">{step.text}</span>
-                                        : <span className="font-bold">{step.text}</span>
+                                        ? <span className="line-through block">{step.text}</span>
+                                        : <span className="font-bold block">{step.text}</span>
                                     }
-                                    {i < loadingStep && <CheckCircle2 className="w-3 h-3 text-green-500 ml-auto shrink-0" />}
+                                    {i < loadingStep && <CheckCircle2 className="w-3 h-3 text-green-500 dark:text-green-400 ml-auto shrink-0" />}
                                 </div>
                             );
                         })}
+                    </div>
                     </div>
                 </div>
             )}
@@ -770,15 +777,15 @@ export default function GapAnalysis() {
                                     <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" />Technical Signals</p>
                                     <div className="grid grid-cols-2 gap-y-2 gap-x-3">
                                         {[
-                                            ['HTTPS', <StatusIndicator value={site.isSecure} />],
-                                            ['Mobile', <StatusIndicator value={site.hasViewport} />],
-                                            ['Canonical', <StatusIndicator value={site.hasCanonical} />],
-                                            ['Schema/JSON-LD', <StatusIndicator value={site.hasSchema} />],
-                                            ['Open Graph', <StatusIndicator value={!!site.ogTitle} />],
-                                            ['Twitter Card', <StatusIndicator value={!!site.twitterCard} />],
-                                            ['Robots.txt', <StatusIndicator value={site.hasRobotsTxt} />],
-                                            ['Sitemap Ref', <StatusIndicator value={site.hasSitemapRef} />],
-                                            ['Favicon', <StatusIndicator value={site.hasFavicon} />],
+                                            ['HTTPS', <StatusIndicator key="https" value={site.isSecure} />],
+                                            ['Mobile', <StatusIndicator key="mobile" value={site.hasViewport} />],
+                                            ['Canonical', <StatusIndicator key="canonical" value={site.hasCanonical} />],
+                                            ['Schema/JSON-LD', <StatusIndicator key="schema" value={site.hasSchema} />],
+                                            ['Open Graph', <StatusIndicator key="og" value={!!site.ogTitle} />],
+                                            ['Twitter Card', <StatusIndicator key="twitter" value={!!site.twitterCard} />],
+                                            ['Robots.txt', <StatusIndicator key="robots" value={site.hasRobotsTxt} />],
+                                            ['Sitemap Ref', <StatusIndicator key="sitemap" value={site.hasSitemapRef} />],
+                                            ['Favicon', <StatusIndicator key="favicon" value={site.hasFavicon} />],
                                         ].map(([label, node]) => (
                                             <div key={label} className="flex items-center justify-between gap-2 py-1 border-b border-gray-50">
                                                 <span className="text-[10px] font-bold text-gray-400">{label}</span>

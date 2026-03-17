@@ -7,6 +7,7 @@ export function ThemeProvider({ children, ...props }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line
     setMounted(true);
   }, []);
 

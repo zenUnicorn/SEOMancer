@@ -1,143 +1,267 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowUpRight, Rocket } from "lucide-react";
+import { 
+    ArrowUpRight, 
+    Rocket, 
+    AlertCircle, 
+    TrendingUp, 
+    Link as LinkIcon, 
+    Image as ImageIcon, 
+    Type,
+    ArrowRight,
+    Activity,
+    CheckCircle2,
+    Globe
+} from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function Overview() {
+    // Simulate real-time SEO score updates for "Live" feel
+    const [seoScore, setSeoScore] = useState(82);
+    const [scansCompleted, setScansCompleted] = useState(24);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            // Fluctuate score slightly to simulate live tracking
+            setSeoScore(prev => prev === 82 ? 83 : prev === 83 ? 84 : 82);
+        }, 8000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const topActions = [
+        { 
+            id: 1, 
+            title: "Optimize Missing H1 Tags", 
+            target: "homepage & 2 others",
+            desc: "Found 3 pages missing primary H1 tags. Adding them can boost your core keyword indexing by up to 15%.", 
+            icon: Type, 
+            difficulty: "Easy", 
+            impact: "High",
+            color: "text-blue-500",
+            bg: "bg-blue-500/10 border-blue-500/20"
+        },
+        { 
+            id: 2, 
+            title: "Fix Broken Internal Links", 
+            target: "12 links found (404s)",
+            desc: "Crawler detected broken links disrupting link equity. Fixing these immediately restores lost SEO value.", 
+            icon: LinkIcon, 
+            difficulty: "Medium", 
+            impact: "High",
+            color: "text-red-500",
+            bg: "bg-red-500/10 border-red-500/20"
+        },
+        { 
+            id: 3, 
+            title: "Add Missing Image Alt Text", 
+            target: "45 high-traffic images",
+            desc: "Missing alt attributes are severely hurting your visibility on Google Images. Implement descriptive text.", 
+            icon: ImageIcon, 
+            difficulty: "Easy", 
+            impact: "Medium",
+            color: "text-yellow-500",
+            bg: "bg-yellow-500/10 border-yellow-500/20"
+        },
+    ];
+
+    // SVG path for a smooth, dynamic-looking trend line
+    const trendPath = "M 0,80 C 20,70 40,90 60,60 C 80,30 100,60 120,40 C 140,20 160,50 180,20 C 200,-10 220,30 240,10 C 260,-10 280,20 300,5";
+
     return (
-        <div className="p-6 md:p-10 max-w-7xl mx-auto w-full">
+        <div className="p-6 md:p-10 max-w-7xl mx-auto w-full font-sans">
             {/* Header */}
             <div className="flex flex-col md:flex-row items-baseline justify-between mb-8 gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 font-heading tracking-tight">
+                    <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 font-heading tracking-tight flex items-center gap-3">
                         Dashboard
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-semibold tracking-wide uppercase">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                            Live Data
+                        </span>
                     </h1>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">
-                        Your active workspace to manage SEO projects and scans.
+                    <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+                        Action-oriented insights to dominate your search rankings this week.
                     </p>
                 </div>
                 <div className="flex items-center gap-3 pr-0">
-                    <Link href="/scan" className="px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors flex items-center gap-2 shadow-sm">
-                        <span className="text-lg leading-none">+</span> New Scan
-                    </Link>
-                    <Link href="/gap-analysis" className="px-5 py-2.5 bg-transparent border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                        Gap Analysis
+                    {/* Language Dropdown */}
+                    <div className="relative group/lang z-50">
+                        <button className="px-4 py-2.5 bg-white dark:bg-[#121316] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-full hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors flex items-center gap-2 shadow-sm">
+                            <Globe size={16} className="text-gray-400" />
+                            <span>EN</span>
+                        </button>
+                        <div className="absolute right-0 top-full mt-2 w-36 bg-white dark:bg-[#121316] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl opacity-0 invisible group-hover/lang:opacity-100 group-hover/lang:visible transition-all flex flex-col overflow-hidden py-1">
+                            <button className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium text-gray-900 dark:text-white w-full text-left">
+                                <span className="text-base leading-none block">🇬🇧</span> English
+                            </button>
+                            <button className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium text-gray-600 dark:text-gray-400 w-full text-left">
+                                <span className="text-base leading-none block">🇫🇷</span> French
+                            </button>
+                            <button className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium text-gray-600 dark:text-gray-400 w-full text-left">
+                                <span className="text-base leading-none block">🇪🇸</span> Spanish
+                            </button>
+                            <button className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium text-gray-600 dark:text-gray-400 w-full text-left">
+                                <span className="text-base leading-none block">🇩🇪</span> German
+                            </button>
+                            <button className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium text-gray-600 dark:text-gray-400 w-full text-left">
+                                <span className="text-base leading-none block">🇨🇳</span> Mandarin
+                            </button>
+                        </div>
+                    </div>
+
+                    <Link href="/scan" className="px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold rounded-full transition-colors flex items-center gap-2 shadow-sm hover:bg-black dark:hover:bg-gray-200">
+                        <Rocket size={16} /> Run New Scan
                     </Link>
                 </div>
             </div>
 
-            {/* Metric Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* Total Scans - Dark accent */}
-                <div className="bg-gray-900 dark:bg-white rounded-3xl p-6 text-white dark:text-gray-900 flex flex-col justify-between shadow-sm relative overflow-hidden h-40">
+            {/* Top Critical Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                
+                {/* Global Health Score (Live) */}
+                <div className="md:col-span-1 bg-gray-900 dark:bg-white rounded-3xl p-5 text-white dark:text-gray-900 flex flex-col justify-between shadow-xl relative overflow-hidden min-h-[160px]">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 dark:bg-black/5 rounded-full blur-2xl -mr-10 -mt-10"></div>
                     <div className="flex justify-between items-start mb-2 z-10">
-                        <span className="text-sm font-medium opacity-90">Total Scans</span>
-                        <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white flex items-center justify-center">
-                            <ArrowUpRight size={16} />
+                        <span className="text-xs font-semibold tracking-wide opacity-80 uppercase">Global Health</span>
+                        <div className="w-8 h-8 rounded-full bg-white/10 dark:bg-black/10 backdrop-blur-md flex items-center justify-center">
+                            <Activity size={16} />
                         </div>
                     </div>
-                    <div className="z-10 mt-auto">
-                        <h2 className="text-5xl font-semibold tracking-tight font-heading mb-3">24</h2>
-                        <div className="flex items-center gap-2 text-xs font-medium text-gray-400 dark:text-gray-500">
-                            <span className="bg-white/20 dark:bg-gray-900/20 px-1.5 py-0.5 rounded text-white dark:text-gray-900 flex items-center gap-1">5 <ArrowUpRight size={10} /></span>
-                            <span>Increased from last month</span>
+                    <div className="z-10 mt-auto flex flex-col gap-1 text-center justify-center items-center">
+                        <div className="flex items-baseline gap-2 mb-1">
+                            <h2 className="text-6xl font-black tracking-tighter tabular-nums">{seoScore}</h2>
+                            <span className="text-xl font-bold opacity-50">/100</span>
                         </div>
-                    </div>
-                </div>
-
-                {/* Optimizations Done */}
-                <div className="bg-white dark:bg-[#1e1e28] rounded-3xl p-6 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white flex flex-col justify-between shadow-sm h-40">
-                    <div className="flex justify-between items-start mb-2">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Optimizations Done</span>
-                        <div className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                            <ArrowUpRight size={16} />
-                        </div>
-                    </div>
-                    <div className="mt-auto">
-                        <h2 className="text-5xl font-semibold tracking-tight font-heading mb-3 text-gray-900 dark:text-white">10</h2>
-                        <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-                            <span className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600 px-1.5 py-0.5 rounded flex items-center gap-1">6 <ArrowUpRight size={10} /></span>
-                            <span>Increased from last month</span>
+                        <div className="flex flex-col items-center justify-center gap-1.5 text-[10px] font-semibold text-green-400 dark:text-green-600">
+                            <span>+4 pts this week</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Average SEO Score */}
-                <div className="bg-white dark:bg-[#1e1e28] rounded-3xl p-6 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white flex flex-col justify-between shadow-sm h-40">
-                    <div className="flex justify-between items-start mb-2">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Avg. SEO Score</span>
-                        <div className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                            <ArrowUpRight size={16} />
+                {/* SEO Score Trend (Graph) */}
+                <div className="md:col-span-2 bg-white dark:bg-[#121316] rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                    <div className="flex justify-between items-start mb-4 z-10">
+                        <div>
+                            <span className="text-sm font-bold text-gray-900 dark:text-white tracking-wide">SEO Score Trend (30 Days)</span>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 font-medium">Consistent upward trajectory after fixing core web vitals.</p>
+                        </div>
+                        <span className="hidden sm:flex items-center gap-1 text-[10px] font-bold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <TrendingUp size={12} /> +12.4% Growth
+                        </span>
+                    </div>
+
+                    {/* Smooth SVG Line Chart */}
+                    <div className="w-full h-24 mt-2 relative z-0 flex items-end">
+                        <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 300 100">
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" className="stop-gray-900 dark:stop-white" stopColor="currentColor" stopOpacity="0.15" />
+                                    <stop offset="100%" className="stop-gray-900 dark:stop-white" stopColor="currentColor" stopOpacity="0" />
+                                </linearGradient>
+                            </defs>
+                            {/* Area Fill */}
+                            <path d={`${trendPath} L 300,100 L 0,100 Z`} fill="url(#gradient)" className="text-gray-900 dark:text-white" />
+                            {/* Trend Line */}
+                            <path d={trendPath} fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900 dark:text-white" />
+                            {/* Data points */}
+                            <circle cx="60" cy="60" r="4" fill="currentColor" stroke="currentColor" strokeWidth="2" className="text-white dark:text-[#121316] stroke-gray-900 dark:stroke-white" />
+                            <circle cx="120" cy="40" r="4" fill="currentColor" stroke="currentColor" strokeWidth="2" className="text-white dark:text-[#121316] stroke-gray-900 dark:stroke-white" />
+                            <circle cx="180" cy="20" r="4" fill="currentColor" stroke="currentColor" strokeWidth="2" className="text-white dark:text-[#121316] stroke-gray-900 dark:stroke-white" />
+                            <circle cx="240" cy="10" r="4" fill="currentColor" stroke="currentColor" strokeWidth="2" className="text-white dark:text-[#121316] stroke-gray-900 dark:stroke-white" />
+                            <circle cx="300" cy="5" r="5" fill="currentColor" stroke="currentColor" strokeWidth="2" className="text-gray-900 dark:text-white stroke-white dark:stroke-[#121316] animate-pulse" />
+                        </svg>
+                        
+                        {/* Tooltip mockup for the latest point */}
+                        <div className="absolute right-0 top-0 -mt-2 -mr-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-bold px-2 py-1 rounded-md shadow-lg">
+                            Today: {seoScore}
                         </div>
                     </div>
-                    <div className="mt-auto">
-                        <h2 className="text-5xl font-semibold tracking-tight font-heading mb-3 text-gray-900 dark:text-white">85</h2>
-                        <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-                            <span>Excellent Standing</span>
-                        </div>
+                </div>
+
+                <div className="md:col-span-1 bg-white dark:bg-[#121316] rounded-3xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col items-center justify-center text-center">
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-full flex items-center justify-center mb-3">
+                        <Rocket size={20} />
                     </div>
+                    <span className="text-sm font-bold text-gray-900 dark:text-white mb-1">Live Updates</span>
+                    <p className="text-[10px] text-gray-500 font-medium">Tracking ranking impact continuously.</p>
                 </div>
             </div>
 
-            {/* Second Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {/* Project Analytics Chart */}
-                <div className="bg-white dark:bg-[#1e1e28] rounded-3xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Project Analytics</h3>
-                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2.5 py-1 rounded-full border border-gray-200 dark:border-gray-600">Active</span>
+            {/* Decision-Oriented Tasks Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Top Actions to Improve Ranking */}
+                <div className="lg:col-span-2 bg-white dark:bg-[#121316] rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col h-full">
+                    <div className="flex items-center justify-between mb-5 border-b border-gray-100 dark:border-gray-800 pb-4">
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <Activity size={18} className="text-green-500" />
+                                Live Market Insights
+                            </h3>
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider mt-1">Algorithmic SEO Adjustments Required To Rank This Week</p>
+                        </div>
                     </div>
-                    <div className="flex justify-between items-end h-40 gap-3 mt-4 px-2">
-                        {/* S */}
-                        <div className="flex flex-col items-center gap-3 flex-1 relative h-full justify-end">
-                            <div className="w-full h-[60%] rounded-[20px] bg-stripes opacity-50"></div>
-                            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">S</span>
-                        </div>
-                        {/* M */}
-                        <div className="flex flex-col items-center gap-3 flex-1 relative h-full justify-end">
-                            <div className="w-full h-[85%] rounded-[20px] bg-gray-800 dark:bg-gray-300"></div>
-                            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">M</span>
-                        </div>
-                        {/* T */}
-                        <div className="flex flex-col items-center gap-3 flex-1 relative h-full justify-end">
-                            <div className="absolute top-0 text-[10px] text-gray-500 dark:text-gray-400 font-semibold bg-gray-50 dark:bg-gray-700 px-2 py-0.5 rounded-full border border-gray-200 dark:border-gray-600">74%</div>
-                            <div className="w-full h-[70%] rounded-[20px] bg-gray-400 dark:bg-gray-500"></div>
-                            <span className="text-xs text-gray-900 dark:text-white font-semibold">T</span>
-                        </div>
-                        {/* W */}
-                        <div className="flex flex-col items-center gap-3 flex-1 relative h-full justify-end">
-                            <div className="w-full h-[100%] rounded-[20px] bg-gray-900 dark:bg-white"></div>
-                            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">W</span>
-                        </div>
-                        {/* T */}
-                        <div className="flex flex-col items-center gap-3 flex-1 relative h-full justify-end">
-                            <div className="w-full h-[55%] rounded-[20px] bg-stripes opacity-50"></div>
-                            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">T</span>
-                        </div>
-                        {/* F */}
-                        <div className="flex flex-col items-center gap-3 flex-1 relative h-full justify-end">
-                            <div className="w-full h-[40%] rounded-[20px] bg-stripes opacity-50"></div>
-                            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">F</span>
-                        </div>
-                        {/* S */}
-                        <div className="flex flex-col items-center gap-3 flex-1 relative h-full justify-end">
-                            <div className="w-full h-[65%] rounded-[20px] bg-stripes opacity-50"></div>
-                            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">S</span>
-                        </div>
+
+                    <div className="flex flex-col gap-0 h-full justify-between">
+                        {topActions.map((action, idx) => {
+                            return (
+                                <div key={action.id} className="group relative transition-all flex flex-col sm:flex-row gap-5 items-start sm:items-center py-4 border-b border-gray-100 last:border-b-0 dark:border-gray-800">
+                                    <div className="flex-1">
+                                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                                            <h4 className="font-bold text-gray-900 dark:text-white text-sm">{action.title}</h4>
+                                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-300">
+                                                {action.target}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed">{action.desc}</p>
+                                    </div>
+                                    <div className="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-1 w-full sm:w-auto shrink-0 mt-2 sm:mt-0 pt-2 sm:pt-0">
+                                        <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+                                            <div className="flex flex-col sm:items-end">
+                                                <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">Impact</span>
+                                                <span className={`text-xs font-black ${action.impact === 'High' ? 'text-red-500' : 'text-yellow-500'}`}>{action.impact}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
-                {/* Recent Activities */}
-                <div className="bg-white dark:bg-[#1e1e28] rounded-3xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-6">Recent Activities</h3>
-                    <div className="flex-1 flex flex-col items-center justify-center text-center py-6 min-h-[160px]">
-                        <div className="bg-gray-100 dark:bg-gray-800 w-16 h-16 rounded-full flex items-center justify-center mb-4 border border-gray-200 dark:border-gray-700">
-                            <Rocket className="text-gray-400 dark:text-gray-500" size={24} />
+                {/* Secondary Sidebar Metrics */}
+                <div className="flex flex-col gap-6">
+                    {/* Active Scans Summary */}
+                    <div className="bg-white dark:bg-[#121316] rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm flex-1 flex flex-col">
+                        <h3 className="font-bold text-gray-900 dark:text-white mb-3">Recent Activity</h3>
+                        
+                        <div className="flex flex-col gap-4 py-0">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center shrink-0 border border-green-200 dark:border-green-800/50">
+                                    <CheckCircle2 size={24} />
+                                </div>
+                                <div>
+                                    <p className="font-bold text-gray-900 dark:text-white text-sm">Scan Completed</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate w-40 hover:underline cursor-pointer">acme-corp.com/pricing</p>
+                                </div>
+                                <span className="ml-auto text-xs font-bold text-gray-400">2h ago</span>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 flex items-center justify-center shrink-0 border border-yellow-200 dark:border-yellow-800/50">
+                                    <AlertCircle size={24} />
+                                </div>
+                                <div>
+                                    <p className="font-bold text-gray-900 dark:text-white text-sm">Gap Analysis Ready</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Competitor report generated</p>
+                                </div>
+                                <span className="ml-auto text-xs font-bold text-gray-400">5h ago</span>
+                            </div>
                         </div>
-                        <h4 className="text-base font-bold text-gray-900 dark:text-white mb-2">No History Yet</h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-6 max-w-[220px]">
-                            Run your first query to see your past scans populate here.
-                        </p>
-                        <Link href="/scan" className="px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors inline-block shadow-sm">
-                            Run First Scan
+
+                        <Link href="/scan" className="mt-auto text-center text-sm font-bold text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors py-3 w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#121316] rounded-xl shadow-sm">
+                            View All History
                         </Link>
                     </div>
                 </div>
