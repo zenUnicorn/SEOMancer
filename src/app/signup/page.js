@@ -16,7 +16,7 @@ export default function SignUpPage() {
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) router.push('/');
+      if (session) router.push('/dashboard');
     };
     checkSession();
   }, [router]);

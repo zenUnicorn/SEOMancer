@@ -41,7 +41,7 @@ export default function Sidebar() {
     }, []);
 
     const navs = [
-        { name: "Overview", href: "/", icon: <Home01Icon size={20} /> },
+        { name: "Overview", href: "/dashboard", icon: <Home01Icon size={20} /> },
         { name: "Scan", href: "/scan", icon: <Search01Icon size={20} /> },
         { name: "Gap Analysis", href: "/gap-analysis", icon: <ChartLineData01Icon size={20} /> }
     ];
@@ -58,9 +58,10 @@ export default function Sidebar() {
         <>
             {/* Mobile Header Toggle */}
             <div className="md:hidden fixed top-0 left-0 w-full bg-white dark:bg-[#1a1a22] border-b border-gray-200 dark:border-gray-800 z-50 px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2 font-bold text-lg text-gray-900 dark:text-white font-heading">
-                    SEOMancer
-                </div>
+                <Link href="/dashboard" className="flex items-center shrink-0">
+                    <img src="/logo-light.svg" alt="SEOMancer" className="h-6 w-auto dark:hidden" />
+                    <img src="/logo-dark.svg" alt="SEOMancer" className="h-6 w-auto hidden dark:block" />
+                </Link>
                 <div className="flex items-center gap-2">
                     <ThemeToggle compact />
                     <button onClick={() => setIsOpen(!isOpen)} className="text-gray-600 dark:text-gray-300 p-1">
@@ -92,12 +93,21 @@ export default function Sidebar() {
                 `}
             >
                 {/* Logo / Brand */}
-                <div className={`px-5 py-5 hidden md:flex items-center font-black text-xl font-heading text-gray-900 dark:text-white tracking-tight border-b border-gray-100 dark:border-gray-800 ${isCollapsed ? "justify-center" : "justify-between"}`}>
-                    {!isCollapsed && <span>SEOMancer</span>}
-                    {isCollapsed && <span className="text-sm">SM</span>}
+                <div className={`py-[18px] hidden md:flex items-center border-b border-gray-100 dark:border-gray-800 ${isCollapsed ? "justify-center px-1 gap-1" : "justify-between px-5"}`}>
+                    {!isCollapsed ? (
+                        <Link href="/dashboard" className="flex items-center shrink-0">
+                            <img src="/logo-light.svg" alt="SEOMancer" className="h-6 w-auto dark:hidden" />
+                            <img src="/logo-dark.svg" alt="SEOMancer" className="h-6 w-auto hidden dark:block" />
+                        </Link>
+                    ) : (
+                        <Link href="/dashboard" className="flex items-center shrink-0">
+                            <img src="/icon-only-light.svg" alt="SEOMancer" className="h-6 w-6 dark:hidden" />
+                            <img src="/icon-only-dark.svg" alt="SEOMancer" className="h-6 w-6 hidden dark:block" />
+                        </Link>
+                    )}
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 transition-colors shrink-0"
                     >
                         {isCollapsed ? <ArrowRight01Icon size={18} /> : <ArrowLeft01Icon size={18} />}
                     </button>

@@ -17,6 +17,11 @@ export const AuthProvider = ({ children }) => {
       // First try to fetch the session actively
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
+
+      // Clean the URL if Supabase authentication tokens are present in the hash fragment
+      if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
       
       const isAuthPage = pathname === '/login' || pathname === '/signup';
       
@@ -25,7 +30,7 @@ export const AuthProvider = ({ children }) => {
         router.push('/login');
       } else if (session && isAuthPage) {
         // Already authenticated but trying to load login = Boot to dashboard
-        router.push('/');
+        router.push('/dashboard');
       }
       
       setLoading(false);
@@ -48,7 +53,16 @@ export const AuthProvider = ({ children }) => {
 
   // To prevent UI flashes of the protected content, show a generic loading screen initially
   if (loading) {
-    return <div className="min-h-screen bg-[#f5f5f7] dark:bg-[#0f0f12] flex items-center justify-center font-semibold text-gray-500">Checking authentication...</div>;
+    return (
+      <div className="w-full w-screen flex-1 h-screen min-h-screen bg-[#f5f5f7] dark:bg-[#0f0f12] flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center animate-pulse gap-3 text-gray-900 dark:text-white">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full border-[4px] border-gray-900 dark:border-white"></div>
+            <span className="font-bold text-2xl tracking-tight">SEOMancer</span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

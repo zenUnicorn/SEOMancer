@@ -1,0 +1,17 @@
+{
+  "name": "SEOMancer",
+  "short_name": "SEOMancer",
+  "description": "Analyze, rank, and improve your website's SEO dynamically with our advanced AI-driven insight engine.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f12",
+  "theme_color": "#8c40ff",
+  "icons": [
+    {
+      "src": "/icon-only-light.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

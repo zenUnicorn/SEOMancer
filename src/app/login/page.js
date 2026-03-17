@@ -17,7 +17,7 @@ export default function LoginPage() {
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) router.push('/');
+      if (session) router.push('/dashboard');
     };
     checkSession();
   }, [router]);
@@ -50,7 +50,7 @@ export default function LoginPage() {
     if (signInError) {
       setError(signInError.message);
     } else {
-      router.push('/');
+      router.push('/dashboard');
     }
     setIsLoading(false);
   };

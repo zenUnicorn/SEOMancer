@@ -17,6 +17,25 @@ const montserrat = Montserrat({
 export const metadata = {
   title: "SEOMancer | The Ultimate SEO Optimization Tool",
   description: "Analyze, rank, and improve your website's SEO dynamically with our advanced AI-driven insight engine.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon-only-light.svg",
+    apple: "/apple-icon",
+  },
+  openGraph: {
+    title: "SEOMancer | The Ultimate SEO Optimization Tool",
+    description: "Analyze, rank, and improve your website's SEO dynamically with our advanced AI-driven insight engine.",
+    url: "https://seomancer.com",
+    siteName: "SEOMancer",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SEOMancer | The Ultimate SEO Optimization Tool",
+    description: "Analyze, rank, and improve your website's SEO dynamically with our advanced AI-driven insight engine.",
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -32,6 +51,22 @@ export default function RootLayout({ children }) {
             <main className="flex-1 min-w-0 h-screen overflow-y-auto bg-[#f5f5f7] dark:bg-[#0f0f12]">
               {children}
             </main>
+            {/* Structured Schema Data Injection */}
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "SoftwareApplication",
+                  name: "SEOMancer",
+                  applicationCategory: "BusinessApplication",
+                  operatingSystem: "Any",
+                  description: "Analyze, rank, and improve your website's SEO dynamically with our advanced AI-driven insight engine.",
+                  image: "https://seomancer.com/logo-dark.svg",
+                  url: "https://seomancer.com"
+                }),
+              }}
+            />
           </AuthProvider>
         </ThemeProvider>
       </body>
