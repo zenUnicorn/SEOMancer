@@ -6,7 +6,8 @@
 - **Dynamic Site Scanning:** Extracts accurate, actionable technical SEO data using an efficient, headless approach.
 - **AI Copilot Optimization:** Native integration with Gemini AI to deeply interpret raw metrics and suggest optimized title tags, meta descriptions, and structural "Quick Wins".
 - **Responsive & Modern Design:** Fully responsive, animated monochrome interface tailored for Desktop, Tablet, and Mobile workflows via Framer Motion.
-- **Progressive Wizard Flow:** A guided 4-step user experience combining URL targeting, live previewing, AI enhancements, and a summarized review phase. 
+- **Progressive Wizard Flow:** A guided 4-step user experience combining URL targeting, live previewing, AI enhancements, and a summarized review phase.
+- **Secure Authentication & Database:** Powered natively by Supabase, including robust session-managed routing, email signups, integrated Google OAuth functionality, and scalable database architecture out of the box.
 
 ---
 
