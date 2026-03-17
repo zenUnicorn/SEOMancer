@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { User, Settings, LogOut, ChevronUp } from "lucide-react";
 import {
     Home01Icon,
     Search01Icon,
@@ -14,17 +15,44 @@ import {
     Logout01Icon
 } from "hugeicons-react";
 import ThemeToggle from "./ThemeToggle";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/lib/supabase";
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const isAuthPage = pathname === '/login' || pathname === '/signup';
+    
+    // Fetch authenticated active user variables straight from context layer effortlessly
+    const { user } = useAuth();
+    
     const [isOpen, setIsOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const profileRef = useRef(null);
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (profileRef.current && !profileRef.current.contains(event.target)) {
+                setIsProfileOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const navs = [
         { name: "Overview", href: "/", icon: <Home01Icon size={20} /> },
         { name: "Scan", href: "/scan", icon: <Search01Icon size={20} /> },
         { name: "Gap Analysis", href: "/gap-analysis", icon: <ChartLineData01Icon size={20} /> }
     ];
+
+    const handleSignOut = async () => {
+        setIsProfileOpen(false);
+        await supabase.auth.signOut();
+        // Provider cleanly handles redirect context loop here
+    };
+
+    if (isAuthPage) return null;
 
     return (
         <>
@@ -108,28 +136,94 @@ export default function Sidebar() {
                     })}
                 </div>
 
-                {/* Bottom Area: Theme toggle + Sign Out */}
-                <div className="px-3 pb-4 space-y-2 border-t border-gray-100 dark:border-gray-800 pt-3">
+                {/* Bottom Area: Theme toggle + Profile Section */}
+                <div className="px-3 pb-4 space-y-2 border-t border-gray-100 dark:border-gray-800 pt-3 relative">
                     {!isCollapsed ? (
                         <ThemeToggle />
                     ) : (
                         <ThemeToggle compact />
                     )}
-                    <button
-                        className={`
-                            w-full py-2.5 text-sm font-medium
-                            text-red-500 dark:text-red-400
-                            bg-red-50 dark:bg-red-950/40
-                            hover:bg-red-100 dark:hover:bg-red-900/40
-                            transition-colors rounded-xl
-                            flex items-center justify-center gap-2
-                            ${isCollapsed ? "px-2" : "px-3"}
-                        `}
-                        title={isCollapsed ? "Sign Out" : undefined}
-                    >
-                        <Logout01Icon size={18} />
-                        {!isCollapsed && <span>Sign Out</span>}
-                    </button>
+                    
+                    <div className="relative" ref={profileRef}>
+                        {/* Popover Menu */}
+                        {isProfileOpen && (
+                            <div className={`
+                                absolute bottom-full mb-2 left-0
+                                bg-white dark:bg-[#1a1a22]
+                                border border-gray-200 dark:border-gray-800
+                                rounded-xl shadow-[0_4px_24px_-8px_rgba(0,0,0,0.1)]
+                                dark:shadow-[0_4px_24px_-8px_rgba(0,0,0,0.3)]
+                                py-1.5 z-50 overflow-hidden
+                                transition-all
+                                ${isCollapsed ? "w-12 ml-px" : "w-full min-w-[200px]"}
+                            `}>
+                                <Link 
+                                    href="/settings"
+                                    className={`
+                                        flex items-center gap-3 px-3 py-2.5 text-sm font-medium
+                                        text-gray-600 dark:text-gray-300
+                                        hover:bg-gray-100 dark:hover:bg-gray-800
+                                        transition-colors w-full text-left
+                                        ${isCollapsed ? "justify-center px-0" : ""}
+                                    `}
+                                    onClick={() => setIsProfileOpen(false)}
+                                    title={isCollapsed ? "Settings" : undefined}
+                                >
+                                    <Settings size={18} />
+                                    {!isCollapsed && <span>Settings</span>}
+                                </Link>
+                                <button
+                                    onClick={handleSignOut}
+                                    className={`
+                                        flex items-center gap-3 px-3 py-2.5 text-sm font-medium
+                                        text-red-500 dark:text-red-400
+                                        hover:bg-red-50 dark:hover:bg-red-950/40
+                                        transition-colors w-full text-left
+                                        ${isCollapsed ? "justify-center px-0" : ""}
+                                    `}
+                                    title={isCollapsed ? "Sign Out" : undefined}
+                                >
+                                    <LogOut size={18} />
+                                    {!isCollapsed && <span>Sign Out</span>}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Profile Button */}
+                        <button
+                            onClick={() => setIsProfileOpen(!isProfileOpen)}
+                            className={`
+                                w-full py-2 flex items-center gap-3 rounded-xl
+                                hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors
+                                ${isCollapsed ? "justify-center px-0" : "px-3"}
+                                ${isProfileOpen ? "bg-gray-100 dark:bg-gray-800" : ""}
+                            `}
+                            title={isCollapsed ? "Profile" : undefined}
+                        >
+                            <div className="w-[34px] h-[34px] rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex flex-col items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 border border-indigo-200 dark:border-indigo-800/50">
+                                <User size={18} strokeWidth={2.5} />
+                            </div>
+                            
+                            {!isCollapsed && (
+                                <>
+                                    <div className="flex-1 text-left overflow-hidden">
+                                        <p className="text-[13px] font-semibold text-gray-900 dark:text-white truncate leading-tight">
+                                            {user?.user_metadata?.first_name 
+                                                ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}` 
+                                                : "User Account"
+                                            }
+                                        </p>
+                                        <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                            {user?.email || "user@example.com"}
+                                        </p>
+                                    </div>
+                                    <div className={`text-gray-400 shrink-0 transition-transform duration-200 ${isProfileOpen ? "rotate-180" : ""}`}>
+                                        <ChevronUp size={16} />
+                                    </div>
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </aside>
         </>

@@ -24,9 +24,9 @@ export async function POST(req) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Using gemini-1.5-flash as a newer model
+    // Using gemini-2.5-flash as a newer model
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       generationConfig: { responseMimeType: 'application/json' }
     });
 

@@ -1,6 +1,7 @@
 import { Inter, Montserrat } from "next/font/google";
 import Sidebar from "@/components/Sidebar";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -26,10 +27,12 @@ export default function RootLayout({ children }) {
         className={`${inter.variable} ${montserrat.variable} antialiased font-sans selection:bg-purple-500 selection:text-white min-h-screen flex bg-[#f5f5f7] dark:bg-[#0f0f12] text-gray-900 dark:text-gray-100`}
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange={false}>
-          <Sidebar />
-          <main className="flex-1 min-w-0 h-screen overflow-y-auto bg-[#f5f5f7] dark:bg-[#0f0f12]">
-            {children}
-          </main>
+          <AuthProvider>
+            <Sidebar />
+            <main className="flex-1 min-w-0 h-screen overflow-y-auto bg-[#f5f5f7] dark:bg-[#0f0f12]">
+              {children}
+            </main>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
