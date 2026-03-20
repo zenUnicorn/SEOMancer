@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useToast } from '@/components/ToastProvider';
 import {
     GitCompareArrows, Globe, ChevronRight, FileText, Trophy,
     CheckCircle2, XCircle, AlertTriangle, ExternalLink, ArrowRight,
@@ -31,26 +32,33 @@ const LOADING_STEPS = [
 ];
 
 function ScoreBadge({ score, size = 'lg' }) {
-    const color = score >= 75 ? 'text-green-600' : score >= 50 ? 'text-amber-500' : 'text-red-500';
-    const ring = score >= 75 ? 'border-green-200 bg-green-50' : score >= 50 ? 'border-amber-200 bg-amber-50' : 'border-red-200 bg-red-50';
+    const color = score >= 75 ? 'text-gray-900 dark:text-white' : score >= 50 ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400';
+    const ring = score >= 75 ? 'border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-900' : score >= 50 ? 'border-gray-400 dark:border-gray-600 bg-gray-50 dark:bg-gray-900' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900';
     const dim = size === 'lg' ? 'w-24 h-24 text-3xl' : 'w-14 h-14 text-lg';
     return (
-        <div className={`rounded-full border-4 ${ring} ${dim} flex flex-col items-center justify-center font-black ${color} shrink-0`}>
+        <div className={`rounded-2xl border-4 ${ring} ${dim} flex flex-col items-center justify-center font-black ${color} shrink-0 shadow-sm transition-transform hover:scale-105`}>
             {score}
-            <span className="text-[9px] font-bold mt-0.5 opacity-60">/100</span>
+            <span className="text-[9px] font-bold mt-0.5 opacity-60 tracking-wider">/ 100</span>
         </div>
     );
 }
 
 function MetricRow({ label, a, b, aWins, icon: Icon }) {
     return (
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-3 border-b border-gray-100 last:border-0">
-            <div className={`text-xs font-semibold text-right truncate ${aWins === true ? 'text-green-700 font-bold' : aWins === null ? 'text-gray-600' : 'text-gray-500'}`}>{a}</div>
-            <div className="flex flex-col items-center gap-0.5 shrink-0">
-                {Icon && <Icon className="w-3.5 h-3.5 text-gray-300" />}
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap text-center">{label}</span>
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-3 py-4 border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors px-2 rounded-xl">
+            <div className={`text-xs font-bold sm:text-right truncate flex flex-col sm:flex-row items-center justify-end gap-2 ${aWins === true ? 'text-gray-900 dark:text-white' : aWins === null ? 'text-gray-400' : 'text-gray-400 opacity-50'}`}>
+                <span className="truncate">{a}</span>
+                {aWins === true && <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />}
             </div>
-            <div className={`text-xs font-semibold text-left truncate ${aWins === false ? 'text-green-700 font-bold' : aWins === null ? 'text-gray-600' : 'text-gray-500'}`}>{b}</div>
+            
+            <div className="flex flex-col items-center gap-1 shrink-0 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700">
+                <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest whitespace-nowrap text-center">{label}</span>
+            </div>
+            
+            <div className={`text-xs font-bold sm:text-left truncate flex flex-col sm:flex-row-reverse items-center justify-end sm:justify-start gap-2 ${aWins === false ? 'text-gray-900 dark:text-white' : aWins === null ? 'text-gray-400' : 'text-gray-400 opacity-50'}`}>
+                <span className="truncate">{b}</span>
+                {aWins === false && <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />}
+            </div>
         </div>
     );
 }
@@ -62,10 +70,10 @@ function StatusIndicator({ value, trueText = 'Yes', falseText = 'No' }) {
 }
 
 export default function GapAnalysis() {
-    const [tab, setTab] = useState('input'); // 'input' | 'loading' | 'results'
+    const { success, error: toastError, warning } = useToast();
+    const [tab, setTab] = useState('input');
     const [urlA, setUrlA] = useState('');
     const [urlB, setUrlB] = useState('');
-    const [error, setError] = useState(null);
     const [result, setResult] = useState(null);
     const [loadingStep, setLoadingStep] = useState(0);
     const [progress, setProgress] = useState(0);
@@ -87,10 +95,9 @@ export default function GapAnalysis() {
 
     const runAnalysis = async () => {
         if (!urlA.trim() || !urlB.trim()) {
-            setError('Please enter both website URLs before running the analysis.');
+            warning('Missing URLs', 'Please enter both website URLs before running the analysis.');
             return;
         }
-        setError(null);
         setLoadingStep(0);
         setProgress(0);
         setTab('loading');
@@ -109,9 +116,10 @@ export default function GapAnalysis() {
             await new Promise(r => setTimeout(r, 600));
             setResult(data);
             setTab('results');
+            success('Analysis complete', `${data.siteA?.hostname} vs ${data.siteB?.hostname} — results ready.`);
         } catch (err) {
             clearInterval(stepRef.current);
-            setError(err.message || 'Analysis failed. Please try again.');
+            toastError('Analysis failed', err.message || 'Could not complete the comparison. Please try again.');
             setTab('input');
         }
     };
@@ -428,39 +436,43 @@ export default function GapAnalysis() {
     };
 
     return (
-        <div className="p-6 md:p-10 max-w-7xl mx-auto w-full flex flex-col gap-8 min-h-screen">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto w-full flex flex-col gap-6 min-h-screen pt-16 md:pt-8">
 
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <div className="bg-gray-900 dark:bg-white p-3 rounded-2xl text-white dark:text-gray-900">
-                    <GitCompareArrows size={22} />
-                </div>
-                <div>
-                    <h1 className="text-2xl font-black text-gray-900 dark:text-white font-heading">Gap Analysis</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Compare two websites side-by-side across 20+ SEO signals</p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex items-center gap-3">
+                    <div className="bg-gray-900 dark:bg-white p-2.5 rounded-2xl text-white dark:text-gray-900 shrink-0">
+                        <GitCompareArrows size={20} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-black text-gray-900 dark:text-white font-heading">Gap Analysis</h1>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Compare two websites across 20+ SEO signals</p>
+                    </div>
                 </div>
                 {tab === 'results' && (
-                    <div className="ml-auto flex gap-2">
+                    <div className="sm:ml-auto flex gap-2 flex-wrap">
                         <button
                             onClick={() => { setTab('input'); setResult(null); }}
-                            className="px-4 py-2 text-xs font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                            className="px-3 py-2 text-xs font-bold text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                         >
                             New Analysis
                         </button>
                         <div className="relative">
                             <button
                                 onClick={() => setShowExportMenu(v => !v)}
-                                className="px-4 py-2 text-xs font-bold text-white bg-gray-900 rounded-xl hover:bg-black transition-colors flex items-center gap-1.5"
+                                className="px-3 py-2 text-xs font-bold text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-xl hover:bg-black dark:hover:bg-gray-200 transition-colors flex items-center gap-1.5"
                             >
-                                <FileExportIcon size={14} className="shrink-0" /> Export Report <ArrowDown01Icon size={12} className="shrink-0" />
+                                <FileExportIcon size={14} className="shrink-0" />
+                                <span className="hidden sm:inline">Export Report</span>
+                                <ArrowDown01Icon size={12} className="shrink-0" />
                             </button>
                             {showExportMenu && (
-                                <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden min-w-[140px]">
+                                <div className="absolute right-0 mt-1 bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50 overflow-hidden min-w-[160px]">
                                     {[['txt', 'Plain Text (.txt)', exportTxt], ['pdf', 'PDF (.pdf)', exportPdf], ['docx', 'Word (.doc)', exportDocx]].map(([ext, label, fn]) => (
-                                        <button key={ext} onClick={fn} className="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors">
+                                        <button key={ext} onClick={fn} className="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors">
                                             {ext === 'txt' && <FileAttachmentIcon size={13} className="text-gray-400 shrink-0" />}
-                                            {ext === 'pdf' && <Pdf01Icon size={13} className="text-red-400 shrink-0" />}
-                                            {ext === 'docx' && <Doc01Icon size={13} className="text-blue-400 shrink-0" />}
+                                            {ext === 'pdf' && <Pdf01Icon size={13} className="text-gray-400 shrink-0" />}
+                                            {ext === 'docx' && <Doc01Icon size={13} className="text-gray-400 shrink-0" />}
                                             {label}
                                         </button>
                                     ))}
@@ -488,60 +500,51 @@ export default function GapAnalysis() {
             {/* ── TAB: INPUT ──────────────────────────────────────────── */}
             {(tab === 'input') && (
                 <div className="flex flex-col items-center flex-1 justify-center pb-16 w-full max-w-4xl mx-auto">
-                    <div className="bg-white dark:bg-[#121316] rounded-[32px] p-8 md:p-12 border border-gray-200 dark:border-gray-800 shadow-xl w-full flex flex-col items-center gap-8 text-center animate-in fade-in zoom-in-95 duration-300">
-                        <div className="w-20 h-20 bg-gray-50 dark:bg-gray-900 rounded-full border border-gray-100 dark:border-gray-800 flex items-center justify-center shadow-inner mb-2">
-                            <GitCompareArrows className="w-10 h-10 text-gray-900 dark:text-white" />
+                    <div className="bg-white dark:bg-[#1e1e28] rounded-[32px] p-6 md:p-12 border border-gray-200 dark:border-gray-700 shadow-xl w-full flex flex-col items-center gap-8 text-center">
+                        <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-50 dark:bg-gray-900 rounded-full border border-gray-100 dark:border-gray-800 flex items-center justify-center shadow-inner">
+                            <GitCompareArrows className="w-8 h-8 md:w-10 md:h-10 text-gray-900 dark:text-white" />
                         </div>
                         <div>
-                            <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white font-heading mb-3">Compare two websites</h2>
+                            <h2 className="text-xl md:text-3xl font-black text-gray-900 dark:text-white font-heading mb-2">Compare two websites</h2>
                             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-lg mx-auto leading-relaxed">We&apos;ll run a full SEO audit on both and give you a detailed side-by-side breakdown.</p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-end w-full mt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-end w-full">
                         {/* Site A */}
                         <div className="flex flex-col gap-2">
-                            <label className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Website A</label>
+                            <label className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">Website A</label>
                             <div className="relative">
-                                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+                                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
-                                    type="url"
-                                    value={urlA}
+                                    type="url" value={urlA}
                                     onChange={e => setUrlA(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && runAnalysis()}
                                     placeholder="https://example.com"
-                                    className="w-full pl-10 pr-4 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-2xl text-sm font-medium focus:outline-none focus:border-gray-900 dark:focus:border-gray-500 transition-colors"
+                                    className="w-full pl-10 pr-4 py-3.5 bg-white dark:bg-[#16161f] border-2 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 rounded-2xl text-sm font-medium focus:outline-none focus:border-gray-900 dark:focus:border-gray-500 transition-colors"
                                 />
                             </div>
                         </div>
 
                         {/* VS badge */}
-                        <div className="w-10 h-10 rounded-full bg-gray-900 text-white text-[11px] font-black flex items-center justify-center shrink-0 self-center mt-6">VS</div>
+                        <div className="w-9 h-9 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[11px] font-black flex items-center justify-center shrink-0 self-center mt-4 md:mt-6 mx-auto">VS</div>
 
                         {/* Site B */}
                         <div className="flex flex-col gap-2">
-                            <label className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Website B</label>
+                            <label className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">Website B</label>
                             <div className="relative">
-                                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
-                                    type="url"
-                                    value={urlB}
+                                    type="url" value={urlB}
                                     onChange={e => setUrlB(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && runAnalysis()}
                                     placeholder="https://competitor.com"
-                                    className="w-full pl-10 pr-4 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-2xl text-sm font-medium focus:outline-none focus:border-gray-900 dark:focus:border-gray-500 transition-colors"
+                                    className="w-full pl-10 pr-4 py-3.5 bg-white dark:bg-[#16161f] border-2 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 rounded-2xl text-sm font-medium focus:outline-none focus:border-gray-900 dark:focus:border-gray-500 transition-colors"
                                 />
                             </div>
                         </div>
                     </div>
 
-                    {error && (
-                        <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm font-medium max-w-xl w-full">
-                            <AlertTriangle className="w-4 h-4 shrink-0" />
-                            {error}
-                        </div>
-                    )}
-
-                    <div className="flex flex-col items-center justify-center gap-3 w-full mt-4">
+                    <div className="flex flex-col items-center justify-center gap-3 w-full">
                         <button
                             onClick={runAnalysis}
                             className="w-full max-w-md py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-black text-base rounded-2xl hover:bg-black dark:hover:bg-gray-200 transition-all shadow-md flex items-center justify-center gap-2 hover:gap-3"
@@ -549,8 +552,7 @@ export default function GapAnalysis() {
                             Run Gap Analysis <ArrowRight className="w-5 h-5" />
                         </button>
                         <button
-                            disabled
-                            title="Coming soon"
+                            disabled title="Coming soon"
                             className="w-full max-w-md py-3 text-xs font-bold text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl cursor-not-allowed flex items-center justify-center gap-2 select-none"
                         >
                             Compare 3 or more websites
@@ -563,52 +565,54 @@ export default function GapAnalysis() {
 
             {/* ── TAB: LOADING ────────────────────────────────────────── */}
             {tab === 'loading' && (
-                <div className="flex flex-col items-center flex-1 justify-center pb-16 w-full max-w-4xl mx-auto">
-                    <div className="bg-white dark:bg-[#121316] rounded-[32px] p-8 md:p-12 border border-gray-200 dark:border-gray-800 shadow-xl w-full flex flex-col items-center gap-8 text-center animate-in fade-in zoom-in-95 duration-300">
-                    <div className="flex flex-col items-center gap-2 text-center">
-                        <div className="w-20 h-20 rounded-[24px] bg-gray-900 dark:bg-white text-white dark:text-gray-900 flex items-center justify-center mb-4 animate-pulse shadow-md">
-                            {(() => {
-                                const Step = LOADING_STEPS[loadingStep]?.icon || Activity;
-                                return <Step className="w-10 h-10" />;
-                            })()}
+                <div className="flex flex-1 items-center justify-center flex-col max-w-2xl mx-auto w-full py-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="bg-white dark:bg-[#1e1e28] rounded-[40px] p-8 md:p-14 border border-gray-200 dark:border-gray-700 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.12)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] w-full flex flex-col items-center text-center gap-10 relative overflow-hidden">
+                        {/* Shimmer effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-shimmer pointer-events-none" />
+                        
+                        {/* Animated Large Icon */}
+                        <div className="w-24 h-24 rounded-[32px] bg-black dark:bg-white text-white dark:text-black flex items-center justify-center shadow-2xl relative z-10 transition-all duration-700 scale-100 animate-pulse">
+                            {(() => { const S = LOADING_STEPS[loadingStep]?.icon || Activity; return <S className="w-12 h-12" />; })()}
                         </div>
-                        <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white font-heading">Analysing both sites…</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium max-w-sm transition-all duration-500">
-                            {LOADING_STEPS[loadingStep]?.text}
-                        </p>
-                    </div>
+                        
+                        <div className="relative z-10">
+                            <h2 className="text-3xl font-black font-heading mb-3 tracking-tight">Computing Gap Matrix…</h2>
+                            <p className="text-[11px] text-gray-400 font-black uppercase tracking-[0.2em]">{LOADING_STEPS[loadingStep]?.text}</p>
+                        </div>
 
-                    <div className="w-full max-w-lg flex flex-col gap-3">
                         {/* Progress bar */}
-                        <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                            <div
-                                className="h-full bg-gray-900 rounded-full transition-all duration-700 ease-out"
-                                style={{ width: `${progress}%` }}
-                            />
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-400 font-bold">
-                            <span>{urlA}</span>
-                            <span className="text-gray-500">{progress}%</span>
-                            <span>{urlB}</span>
-                        </div>
-                    </div>
-
-                    {/* Activity list */}
-                    <div className="flex flex-col gap-1.5 w-full max-w-sm text-left">
-                        {LOADING_STEPS.slice(0, loadingStep + 1).map((step, i) => {
-                            const Icon = step.icon;
-                            return (
-                                <div key={i} className={`flex items-center gap-2 text-xs font-medium transition-all duration-300 ${i === loadingStep ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-600'}`}>
-                                    <Icon className={`w-3.5 h-3.5 shrink-0 ${i < loadingStep ? 'text-green-500 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'}`} />
-                                    {i < loadingStep
-                                        ? <span className="line-through block">{step.text}</span>
-                                        : <span className="font-bold block">{step.text}</span>
-                                    }
-                                    {i < loadingStep && <CheckCircle2 className="w-3 h-3 text-green-500 dark:text-green-400 ml-auto shrink-0" />}
+                        <div className="w-full flex flex-col gap-4 relative z-10">
+                            <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-4 overflow-hidden shadow-inner p-1">
+                                <div
+                                    className="h-full bg-black dark:bg-white rounded-full transition-all duration-1000 ease-out flex items-center justify-end px-2"
+                                    style={{ width: `${progress}%` }}
+                                >
+                                    {progress > 15 && <span className="text-[8px] font-black text-white dark:text-black">{progress}%</span>}
                                 </div>
-                            );
-                        })}
-                    </div>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] text-gray-500 font-black tracking-widest uppercase">
+                                <span className="truncate max-w-[45%] opacity-60">{urlA}</span>
+                                <span className="text-black dark:text-white px-2 py-0.5 rounded-lg border border-gray-200 dark:border-gray-700">VS</span>
+                                <span className="truncate max-w-[45%] opacity-60 text-right">{urlB}</span>
+                            </div>
+                        </div>
+
+                        {/* Activity list (refined) */}
+                        <div className="flex flex-col gap-2 w-full text-left bg-gray-50/50 dark:bg-black/20 p-6 rounded-3xl border border-gray-100 dark:border-gray-800 relative z-10">
+                            {LOADING_STEPS.slice(Math.max(0, loadingStep - 2), loadingStep + 1).map((step, i) => {
+                                const Icon = step.icon;
+                                const globalIdx = Math.max(0, loadingStep - 2) + i;
+                                const isCurrent = globalIdx === loadingStep;
+                                return (
+                                    <div key={globalIdx} className={`flex items-center gap-4 text-xs font-bold transition-all duration-500 ${isCurrent ? 'text-gray-900 dark:text-white translate-x-2' : 'text-gray-400 opacity-40'}`}>
+                                        <div className={`w-6 h-6 rounded-xl flex items-center justify-center border ${isCurrent ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : 'bg-white text-gray-200 border-gray-100 dark:bg-gray-800 dark:border-gray-700 shadow-sm'}`}>
+                                            {isCurrent ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Icon className="w-3.5 h-3.5" />}
+                                        </div>
+                                        <span className="tracking-tight">{step.text}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             )}
@@ -621,10 +625,10 @@ export default function GapAnalysis() {
                 const loser = aWins ? siteB : siteA;
 
                 return (
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-5">
 
                         {/* ── Hero scores ── */}
-                        <div className={`rounded-[24px] border border-gray-200 bg-white p-6 flex flex-col md:flex-row items-center gap-6`}>
+                        <div className="rounded-[24px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1e1e28] p-5 md:p-6 flex flex-col md:flex-row items-center gap-4 md:gap-6">
                             {/* Site A */}
                             <div className={`flex-1 flex flex-col md:flex-row items-center gap-4 ${aWins ? 'opacity-100' : 'opacity-70'}`}>
                                 <ScoreBadge score={siteA.score} />
@@ -657,41 +661,41 @@ export default function GapAnalysis() {
                         {aiSummary && (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {/* Overall summary */}
-                                <div className="md:col-span-3 bg-gray-900 text-white rounded-[20px] p-6">
+                                <div className="md:col-span-3 bg-gray-900 dark:bg-black text-white rounded-[20px] p-5 md:p-6">
                                     <p className="text-xs font-black uppercase tracking-wider text-gray-400 mb-2">Executive Summary</p>
                                     <p className="text-sm font-medium leading-relaxed">{aiSummary.overallSummary}</p>
                                 </div>
                                 {/* Why winner wins */}
-                                <div className="bg-green-50 border border-green-100 rounded-[20px] p-5">
-                                    <p className="text-xs font-black uppercase tracking-wider text-green-600 mb-3 flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5" />Why {winner.hostname} wins</p>
+                                <div className="bg-gray-50 dark:bg-[#16161f] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5">
+                                    <p className="text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-3 flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5" />Why {winner.hostname} wins</p>
                                     <ul className="flex flex-col gap-2">
                                         {aiSummary.whyWinnerRanksHigher?.map((r, i) => (
-                                            <li key={i} className="text-xs text-green-800 font-medium flex items-start gap-1.5">
-                                                <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5 text-green-500" />{r}
+                                            <li key={i} className="text-xs text-gray-700 dark:text-gray-300 font-medium flex items-start gap-1.5">
+                                                <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5 text-gray-500" />{r}
                                             </li>
                                         ))}
                                     </ul>
                                 </div>
                                 {/* Opportunities for loser */}
-                                <div className="bg-amber-50 border border-amber-100 rounded-[20px] p-5">
-                                    <p className="text-xs font-black uppercase tracking-wider text-amber-600 mb-3 flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" />Top fixes for {loser.hostname}</p>
+                                <div className="bg-gray-50 dark:bg-[#16161f] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5">
+                                    <p className="text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-3 flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" />Top fixes for {loser.hostname}</p>
                                     <ul className="flex flex-col gap-2">
                                         {aiSummary.topOpportunitiesForLoser?.map((o, i) => (
-                                            <li key={i} className="text-xs text-amber-900 font-medium flex items-start gap-1.5">
-                                                <ChevronRight className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-500" />{o}
+                                            <li key={i} className="text-xs text-gray-700 dark:text-gray-300 font-medium flex items-start gap-1.5">
+                                                <ChevronRight className="w-3.5 h-3.5 shrink-0 mt-0.5 text-gray-400" />{o}
                                             </li>
                                         ))}
                                     </ul>
                                 </div>
-                                {/* Key differences table */}
-                                <div className="bg-white border border-gray-200 rounded-[20px] p-5">
-                                    <p className="text-xs font-black uppercase tracking-wider text-gray-600 mb-3 flex items-center gap-1.5"><GitCompareArrows className="w-3.5 h-3.5" />AI Key Differences</p>
+                                {/* Key differences */}
+                                <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5">
+                                    <p className="text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-1.5"><GitCompareArrows className="w-3.5 h-3.5" />AI Key Differences</p>
                                     <div className="flex flex-col gap-1.5">
                                         {aiSummary.keyDifferences?.slice(0, 5).map((d, i) => (
                                             <div key={i} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                                                <span className={`text-[10px] font-bold text-right ${d.winner === 'A' ? 'text-green-600' : 'text-gray-400'}`}>{d.siteA}</span>
+                                                <span className={`text-[10px] font-bold text-right ${d.winner === 'A' ? 'text-gray-900 dark:text-white font-black' : 'text-gray-400'}`}>{d.siteA}</span>
                                                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider text-center whitespace-nowrap px-1">{d.metric}</span>
-                                                <span className={`text-[10px] font-bold text-left ${d.winner === 'B' ? 'text-green-600' : 'text-gray-400'}`}>{d.siteB}</span>
+                                                <span className={`text-[10px] font-bold text-left ${d.winner === 'B' ? 'text-gray-900 dark:text-white font-black' : 'text-gray-400'}`}>{d.siteB}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -704,65 +708,67 @@ export default function GapAnalysis() {
 
                             {/* Column headers */}
                             <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                                <div className="bg-white border border-gray-200 rounded-2xl px-5 py-3 flex items-center gap-3">
-                                    <div className={`w-2.5 h-2.5 rounded-full ${aWins ? 'bg-green-400' : 'bg-gray-300'}`} />
-                                    <span className="text-sm font-black text-gray-900">{siteA.hostname}</span>
+                                <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3 flex items-center gap-3">
+                                    <div className={`w-2.5 h-2.5 rounded-full ${aWins ? 'bg-gray-900 dark:bg-white' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                                    <span className="text-sm font-black text-gray-900 dark:text-white truncate">{siteA.hostname}</span>
+                                    {aWins && <span className="ml-auto text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Winner</span>}
                                 </div>
-                                <div className="bg-white border border-gray-200 rounded-2xl px-5 py-3 flex items-center gap-3">
-                                    <div className={`w-2.5 h-2.5 rounded-full ${!aWins ? 'bg-green-400' : 'bg-gray-300'}`} />
-                                    <span className="text-sm font-black text-gray-900">{siteB.hostname}</span>
+                                <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3 flex items-center gap-3">
+                                    <div className={`w-2.5 h-2.5 rounded-full ${!aWins ? 'bg-gray-900 dark:bg-white' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                                    <span className="text-sm font-black text-gray-900 dark:text-white truncate">{siteB.hostname}</span>
+                                    {!aWins && <span className="ml-auto text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Winner</span>}
                                 </div>
                             </div>
 
                             {/* ── Meta tags ── */}
-                            <div className="bg-white border border-gray-200 rounded-[20px] p-5 flex flex-col gap-1">
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" />Title Tag</p>
-                                <p className="text-xs font-medium text-gray-700 leading-relaxed line-clamp-2">{siteA.title || <span className="text-red-400 italic">Missing</span>}</p>
+                            <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5 flex flex-col gap-1">
+                                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" />Title Tag</p>
+                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-2">{siteA.title || <span className="text-red-400 italic">Missing</span>}</p>
                                 <p className="text-[10px] text-gray-400 mt-1">{siteA.title?.length || 0} chars {siteA.title?.length >= 30 && siteA.title?.length <= 60 ? '✅' : '⚠️'} (ideal: 30–60)</p>
                             </div>
-                            <div className="bg-white border border-gray-200 rounded-[20px] p-5 flex flex-col gap-1">
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" />Title Tag</p>
-                                <p className="text-xs font-medium text-gray-700 leading-relaxed line-clamp-2">{siteB.title || <span className="text-red-400 italic">Missing</span>}</p>
+                            <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5 flex flex-col gap-1">
+                                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" />Title Tag</p>
+                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-2">{siteB.title || <span className="text-red-400 italic">Missing</span>}</p>
                                 <p className="text-[10px] text-gray-400 mt-1">{siteB.title?.length || 0} chars {siteB.title?.length >= 30 && siteB.title?.length <= 60 ? '✅' : '⚠️'} (ideal: 30–60)</p>
                             </div>
 
-                            <div className="bg-white border border-gray-200 rounded-[20px] p-5 flex flex-col gap-1">
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Search className="w-3.5 h-3.5" />Meta Description</p>
-                                <p className="text-xs font-medium text-gray-700 leading-relaxed line-clamp-3">{siteA.metaDesc || <span className="text-red-400 italic">Missing</span>}</p>
+                            <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5 flex flex-col gap-1">
+                                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Search className="w-3.5 h-3.5" />Meta Description</p>
+                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-3">{siteA.metaDesc || <span className="text-red-400 italic">Missing</span>}</p>
                                 <p className="text-[10px] text-gray-400 mt-1">{siteA.metaDesc?.length || 0} chars {siteA.metaDesc?.length >= 100 && siteA.metaDesc?.length <= 160 ? '✅' : '⚠️'} (ideal: 100–160)</p>
                             </div>
-                            <div className="bg-white border border-gray-200 rounded-[20px] p-5 flex flex-col gap-1">
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Search className="w-3.5 h-3.5" />Meta Description</p>
-                                <p className="text-xs font-medium text-gray-700 leading-relaxed line-clamp-3">{siteB.metaDesc || <span className="text-red-400 italic">Missing</span>}</p>
+                            <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5 flex flex-col gap-1">
+                                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Search className="w-3.5 h-3.5" />Meta Description</p>
+                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-3">{siteB.metaDesc || <span className="text-red-400 italic">Missing</span>}</p>
                                 <p className="text-[10px] text-gray-400 mt-1">{siteB.metaDesc?.length || 0} chars {siteB.metaDesc?.length >= 100 && siteB.metaDesc?.length <= 160 ? '✅' : '⚠️'} (ideal: 100–160)</p>
                             </div>
 
                             {/* ── Headings ── */}
-                            <div className="bg-white border border-gray-200 rounded-[20px] p-5">
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" />Heading Structure</p>
+                            <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5">
+                                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" />Heading Structure</p>
                                 <div className="flex gap-3 mb-3">
                                     {[{ l: 'H1', v: siteA.h1Count, good: siteA.h1Count === 1 }, { l: 'H2', v: siteA.h2Count, good: siteA.h2Count >= 2 }, { l: 'H3', v: siteA.h3Count, good: true }].map(({ l, v, good }) => (
-                                        <div key={l} className={`flex-1 rounded-xl p-2 text-center ${good ? 'bg-green-50' : 'bg-red-50'}`}>
-                                            <p className="text-xs font-black text-gray-500">{l}</p>
-                                            <p className={`text-lg font-black ${good ? 'text-green-600' : 'text-red-500'}`}>{v}</p>
+                                        <div key={l} className={`flex-1 rounded-xl p-2 text-center ${good ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-900'}`}>
+                                            <p className="text-xs font-black text-gray-500 dark:text-gray-400">{l}</p>
+                                            <p className={`text-lg font-black ${good ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>{v}</p>
                                         </div>
                                     ))}
                                 </div>
-                                <p className="text-xs font-black text-gray-500 uppercase tracking-wider mb-1">H1 Tags</p>
-                                {siteA.h1s.slice(0, 3).map((h, i) => <p key={i} className="text-[11px] text-gray-600 font-medium border-l-2 border-gray-200 pl-2 mb-1 line-clamp-1">{h}</p>)}
+                                <p className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">H1 Tags</p>
+                                {siteA.h1s.slice(0, 3).map((h, i) => <p key={i} className="text-[11px] text-gray-600 dark:text-gray-400 font-medium border-l-2 border-gray-200 dark:border-gray-700 pl-2 mb-1 line-clamp-1">{h}</p>)}
                             </div>
-                            <div className="bg-white border border-gray-200 rounded-[20px] p-5">
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" />Heading Structure</p>
+                            <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5">
+                                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" />Heading Structure</p>
                                 <div className="flex gap-3 mb-3">
                                     {[{ l: 'H1', v: siteB.h1Count, good: siteB.h1Count === 1 }, { l: 'H2', v: siteB.h2Count, good: siteB.h2Count >= 2 }, { l: 'H3', v: siteB.h3Count, good: true }].map(({ l, v, good }) => (
-                                        <div key={l} className={`flex-1 rounded-xl p-2 text-center ${good ? 'bg-green-50' : 'bg-red-50'}`}>
-                                            <p className="text-xs font-black text-gray-500">{l}</p>
-                                            <p className={`text-lg font-black ${good ? 'text-green-600' : 'text-red-500'}`}>{v}</p>
+                                        <div key={l} className={`flex-1 rounded-xl p-2 text-center ${good ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-900'}`}>
+                                            <p className="text-xs font-black text-gray-500 dark:text-gray-400">{l}</p>
+                                            <p className={`text-lg font-black ${good ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>{v}</p>
                                         </div>
                                     ))}
                                 </div>
-                                <p className="text-xs font-black text-gray-500 uppercase tracking-wider mb-1">H1 Tags</p>
-                                {siteB.h1s.slice(0, 3).map((h, i) => <p key={i} className="text-[11px] text-gray-600 font-medium border-l-2 border-gray-200 pl-2 mb-1 line-clamp-1">{h}</p>)}
+                                <p className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">H1 Tags</p>
+                                {siteB.h1s.slice(0, 3).map((h, i) => <p key={i} className="text-[11px] text-gray-600 dark:text-gray-400 font-medium border-l-2 border-gray-200 dark:border-gray-700 pl-2 mb-1 line-clamp-1">{h}</p>)}
                             </div>
 
                             {/* ── Technical signals ── */}
@@ -773,8 +779,8 @@ export default function GapAnalysis() {
                                 title: siteB.hostname,
                                 site: siteB,
                             }].map(({ title, site }, idx) => (
-                                <div key={idx} className="bg-white border border-gray-200 rounded-[20px] p-5">
-                                    <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" />Technical Signals</p>
+                                <div key={idx} className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5">
+                                    <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" />Technical Signals</p>
                                     <div className="grid grid-cols-2 gap-y-2 gap-x-3">
                                         {[
                                             ['HTTPS', <StatusIndicator key="https" value={site.isSecure} />],
@@ -787,7 +793,7 @@ export default function GapAnalysis() {
                                             ['Sitemap Ref', <StatusIndicator key="sitemap" value={site.hasSitemapRef} />],
                                             ['Favicon', <StatusIndicator key="favicon" value={site.hasFavicon} />],
                                         ].map(([label, node]) => (
-                                            <div key={label} className="flex items-center justify-between gap-2 py-1 border-b border-gray-50">
+                                            <div key={label} className="flex items-center justify-between gap-2 py-1 border-b border-gray-50 dark:border-gray-800">
                                                 <span className="text-[10px] font-bold text-gray-400">{label}</span>
                                                 {node}
                                             </div>
@@ -797,13 +803,12 @@ export default function GapAnalysis() {
                             ))}
 
                             {/* ── Content metrics ── */}
-                            <div className="bg-white border border-gray-200 rounded-[20px] p-5 md:col-span-2">
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" />Content Metrics</p>
-                                {/* Per-site column headers */}
+                            <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5 md:col-span-2">
+                                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" />Content Metrics</p>
                                 <div className="grid grid-cols-[auto_1fr_1fr] gap-x-4 mb-2">
-                                    <span className="text-[10px] font-black text-gray-300 uppercase">Metric</span>
-                                    <span className={`text-[10px] font-black uppercase truncate ${aWins ? 'text-green-600' : 'text-gray-500'}`}>{siteA.hostname}</span>
-                                    <span className={`text-[10px] font-black uppercase truncate ${!aWins ? 'text-green-600' : 'text-gray-500'}`}>{siteB.hostname}</span>
+                                    <span className="text-[10px] font-black text-gray-300 dark:text-gray-700 uppercase">Metric</span>
+                                    <span className={`text-[10px] font-black uppercase truncate ${aWins ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{siteA.hostname}</span>
+                                    <span className={`text-[10px] font-black uppercase truncate ${!aWins ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{siteB.hostname}</span>
                                 </div>
                                 {[
                                     { label: 'Word Count', a: siteA.wordCount.toLocaleString(), b: siteB.wordCount.toLocaleString(), aW: siteA.wordCount > siteB.wordCount },
@@ -816,22 +821,21 @@ export default function GapAnalysis() {
                                     { label: 'H2 Headings', a: siteA.h2Count, b: siteB.h2Count, aW: siteA.h2Count > siteB.h2Count },
                                     { label: 'H3 Headings', a: siteA.h3Count, b: siteB.h3Count, aW: null },
                                 ].map(({ label, a, b, aW }) => (
-                                    <div key={label} className="grid grid-cols-[auto_1fr_1fr] gap-x-4 py-2 border-b border-gray-50 last:border-0 items-center">
+                                    <div key={label} className="grid grid-cols-[auto_1fr_1fr] gap-x-4 py-2 border-b border-gray-50 dark:border-gray-800 last:border-0 items-center">
                                         <span className="text-[10px] font-bold text-gray-400 w-28">{label}</span>
-                                        <span className={`text-xs font-bold ${aW === true ? 'text-green-600' : 'text-gray-700'}`}>{a}</span>
-                                        <span className={`text-xs font-bold ${aW === false ? 'text-green-600' : 'text-gray-700'}`}>{b}</span>
+                                        <span className={`text-xs font-bold ${aW === true ? 'text-gray-900 dark:text-white font-black' : 'text-gray-500 dark:text-gray-400'}`}>{a}</span>
+                                        <span className={`text-xs font-bold ${aW === false ? 'text-gray-900 dark:text-white font-black' : 'text-gray-500 dark:text-gray-400'}`}>{b}</span>
                                     </div>
                                 ))}
                             </div>
 
                             {/* ── OG + Twitter tags ── */}
-                            <div className="bg-white border border-gray-200 rounded-[20px] p-5 md:col-span-2">
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" />Open Graph & Social Tags</p>
-                                {/* Per-site column headers */}
+                            <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5 md:col-span-2">
+                                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" />Open Graph &amp; Social Tags</p>
                                 <div className="grid grid-cols-[auto_1fr_1fr] gap-x-4 mb-2">
-                                    <span className="text-[10px] font-black text-gray-300 uppercase w-28">Tag</span>
-                                    <span className={`text-[10px] font-black uppercase truncate ${aWins ? 'text-green-600' : 'text-gray-500'}`}>{siteA.hostname}</span>
-                                    <span className={`text-[10px] font-black uppercase truncate ${!aWins ? 'text-green-600' : 'text-gray-500'}`}>{siteB.hostname}</span>
+                                    <span className="text-[10px] font-black text-gray-300 dark:text-gray-700 uppercase w-28">Tag</span>
+                                    <span className={`text-[10px] font-black uppercase truncate ${aWins ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{siteA.hostname}</span>
+                                    <span className={`text-[10px] font-black uppercase truncate ${!aWins ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{siteB.hostname}</span>
                                 </div>
                                 {[
                                     { label: 'OG Title', keyA: 'ogTitle' },
@@ -856,45 +860,45 @@ export default function GapAnalysis() {
                             </div>
 
                             {/* ── Issues list ── */}
-                            <div className="bg-white border border-gray-200 rounded-[20px] p-5">
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5 text-red-400" />Issues on {siteA.hostname}</p>
+                            <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5">
+                                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" />Issues on {siteA.hostname} <span className="ml-auto text-gray-300 dark:text-gray-700">{siteA.issues.length}</span></p>
                                 {siteA.issues.length === 0
-                                    ? <p className="text-xs text-green-600 font-bold">No major issues found 🎉</p>
+                                    ? <p className="text-xs text-gray-500 font-bold">No major issues found 🎉</p>
                                     : siteA.issues.map((issue, i) => (
-                                        <div key={i} className="flex items-start gap-2 py-1.5 border-b border-gray-50 last:border-0">
-                                            <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" />
-                                            <span className="text-[11px] text-gray-600 font-medium">{issue}</span>
+                                        <div key={i} className="flex items-start gap-2 py-1.5 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                                            <AlertTriangle className="w-3 h-3 text-gray-400 shrink-0 mt-0.5" />
+                                            <span className="text-[11px] text-gray-600 dark:text-gray-400 font-medium">{issue}</span>
                                         </div>
                                     ))}
                             </div>
-                            <div className="bg-white border border-gray-200 rounded-[20px] p-5">
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5 text-red-400" />Issues on {siteB.hostname}</p>
+                            <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5">
+                                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" />Issues on {siteB.hostname} <span className="ml-auto text-gray-300 dark:text-gray-700">{siteB.issues.length}</span></p>
                                 {siteB.issues.length === 0
-                                    ? <p className="text-xs text-green-600 font-bold">No major issues found 🎉</p>
+                                    ? <p className="text-xs text-gray-500 font-bold">No major issues found 🎉</p>
                                     : siteB.issues.map((issue, i) => (
-                                        <div key={i} className="flex items-start gap-2 py-1.5 border-b border-gray-50 last:border-0">
-                                            <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" />
-                                            <span className="text-[11px] text-gray-600 font-medium">{issue}</span>
+                                        <div key={i} className="flex items-start gap-2 py-1.5 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                                            <AlertTriangle className="w-3 h-3 text-gray-400 shrink-0 mt-0.5" />
+                                            <span className="text-[11px] text-gray-600 dark:text-gray-400 font-medium">{issue}</span>
                                         </div>
                                     ))}
                             </div>
 
                             {/* ── Strengths ── */}
-                            <div className="bg-white border border-gray-200 rounded-[20px] p-5">
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-green-400" />Strengths of {siteA.hostname}</p>
+                            <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5">
+                                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" />Strengths of {siteA.hostname}</p>
                                 {siteA.strengths.map((s, i) => (
-                                    <div key={i} className="flex items-start gap-2 py-1.5 border-b border-gray-50 last:border-0">
-                                        <CheckCircle2 className="w-3 h-3 text-green-400 shrink-0 mt-0.5" />
-                                        <span className="text-[11px] text-gray-600 font-medium">{s}</span>
+                                    <div key={i} className="flex items-start gap-2 py-1.5 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                                        <CheckCircle2 className="w-3 h-3 text-gray-400 shrink-0 mt-0.5" />
+                                        <span className="text-[11px] text-gray-600 dark:text-gray-400 font-medium">{s}</span>
                                     </div>
                                 ))}
                             </div>
-                            <div className="bg-white border border-gray-200 rounded-[20px] p-5">
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-green-400" />Strengths of {siteB.hostname}</p>
+                            <div className="bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[20px] p-5">
+                                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" />Strengths of {siteB.hostname}</p>
                                 {siteB.strengths.map((s, i) => (
-                                    <div key={i} className="flex items-start gap-2 py-1.5 border-b border-gray-50 last:border-0">
-                                        <CheckCircle2 className="w-3 h-3 text-green-400 shrink-0 mt-0.5" />
-                                        <span className="text-[11px] text-gray-600 font-medium">{s}</span>
+                                    <div key={i} className="flex items-start gap-2 py-1.5 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                                        <CheckCircle2 className="w-3 h-3 text-gray-400 shrink-0 mt-0.5" />
+                                        <span className="text-[11px] text-gray-600 dark:text-gray-400 font-medium">{s}</span>
                                     </div>
                                 ))}
                             </div>
@@ -946,32 +950,78 @@ export default function GapAnalysis() {
                         </div>
 
                         {/* ── Footer CTA ── */}
-                        <div className="flex items-center justify-center gap-3 py-6">
-                            <button onClick={() => { setTab('input'); setResult(null); }} className="px-6 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors">
+                        <div className="flex flex-wrap items-center justify-center gap-3 py-6 mt-4 border-t border-gray-100 dark:border-gray-800">
+                            <button 
+                                onClick={() => { setTab('input'); setResult(null); }} 
+                                className="px-6 py-3 text-sm font-bold text-gray-700 dark:text-gray-300 bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all active:scale-[0.98]"
+                            >
                                 Analyse another pair
                             </button>
                             <div className="relative">
-                                <button onClick={() => setShowExportMenu(v => !v)} className="px-6 py-3 text-sm font-bold text-white bg-gray-900 rounded-2xl hover:bg-black transition-colors flex items-center gap-2">
-                                    <FileExportIcon size={15} className="shrink-0" /> Export Report <ArrowDown01Icon size={13} className="shrink-0" />
+                                <button 
+                                    onClick={() => setShowExportMenu(v => !v)} 
+                                    className="px-6 py-3 text-sm font-bold text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-2xl hover:bg-black dark:hover:bg-gray-200 transition-all flex items-center gap-2 shadow-lg active:scale-[0.98]"
+                                >
+                                    <FileExportIcon size={16} className="shrink-0" /> Export Report <ArrowDown01Icon size={14} className="shrink-0" />
                                 </button>
                                 {showExportMenu && (
-                                    <div className="absolute bottom-full mb-1 right-0 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden min-w-[160px]">
-                                        {[['txt', 'Plain Text (.txt)', exportTxt], ['pdf', 'PDF (.pdf)', exportPdf], ['docx', 'Word (.doc)', exportDocx]].map(([ext, label, fn]) => (
-                                            <button key={ext} onClick={fn} className="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors">
-                                                {ext === 'txt' && <FileAttachmentIcon size={13} className="text-gray-400 shrink-0" />}
-                                                {ext === 'pdf' && <Pdf01Icon size={13} className="text-red-400 shrink-0" />}
-                                                {ext === 'docx' && <Doc01Icon size={13} className="text-blue-400 shrink-0" />}
+                                    <div className="absolute bottom-full mb-2 right-0 bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden min-w-[180px] animate-in slide-in-from-bottom-2 duration-200">
+                                        {[
+                                            ['txt', 'Plain Text (.txt)', exportTxt], 
+                                            ['pdf', 'PDF (.pdf)', exportPdf], 
+                                            ['docx', 'Word (.doc)', exportDocx]
+                                        ].map(([ext, label, fn]) => (
+                                            <button 
+                                                key={ext} 
+                                                onClick={() => { fn(); setShowExportMenu(false); }} 
+                                                className="w-full text-left px-4 py-3 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors border-b border-gray-50 dark:border-gray-800 last:border-0"
+                                            >
+                                                {ext === 'txt' && <FileAttachmentIcon size={14} className="text-gray-400 shrink-0" />}
+                                                {ext === 'pdf' && <Pdf01Icon size={14} className="text-gray-400 shrink-0" />}
+                                                {ext === 'docx' && <Doc01Icon size={14} className="text-gray-400 shrink-0" />}
                                                 {label}
                                             </button>
                                         ))}
+                                        <div className="p-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/5">
+                                            <button 
+                                                onClick={() => {
+                                                    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+                                                    const urlBlob = URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = urlBlob;
+                                                    a.download = `seomancer-gap-analysis-${result.siteA.hostname}-vs-${result.siteB.hostname}.json`;
+                                                    a.click();
+                                                    setShowExportMenu(false);
+                                                    success('JSON Exported', 'Raw analysis data downloaded.');
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors rounded-xl border border-transparent hover:border-gray-100 dark:hover:border-gray-800"
+                                            >
+                                                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                                    <FileText size={14} className="text-gray-500" />
+                                                </div>
+                                                JSON Data
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(window.location.href);
+                                                    setShowExportMenu(false);
+                                                    success('Link Copied', 'Gap analysis URL copied.');
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-xs font-black text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-xl mt-1"
+                                            >
+                                                <Link2 size={16} /> Share Comparison
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
                         </div>
-
                     </div>
                 );
             })()}
+
         </div>
     );
 }
+
+

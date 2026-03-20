@@ -13,7 +13,8 @@ import {
     Cancel01Icon,
     ArrowLeft01Icon,
     ArrowRight01Icon,
-    Logout01Icon
+    Logout01Icon,
+    PenTool01Icon
 } from "hugeicons-react";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth } from "@/components/AuthProvider";
@@ -44,7 +45,8 @@ export default function Sidebar() {
     const navs = [
         { name: "Overview", href: "/dashboard", icon: <Home01Icon size={20} /> },
         { name: "Scan", href: "/scan", icon: <Search01Icon size={20} /> },
-        { name: "Gap Analysis", href: "/gap-analysis", icon: <ChartLineData01Icon size={20} /> }
+        { name: "Gap Analysis", href: "/gap-analysis", icon: <ChartLineData01Icon size={20} /> },
+        { name: "Live Editor", href: "/editor", icon: <PenTool01Icon size={20} /> },
     ];
 
     const handleSignOut = async () => {

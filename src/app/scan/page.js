@@ -4,6 +4,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Globe, Search, Loader2, Sparkles, Copy, Check, Link as LinkIcon, FileText, BarChart, Tag, Lightbulb, ExternalLink, ArrowUpRight, ArrowRight, ShieldCheck, Zap, ChevronDown, Activity, CheckCircle2, Target, BrainCircuit, AlertTriangle, TrendingUp } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useToast } from "@/components/ToastProvider";
 
 const SCAN_STEPS = [
   { icon: Globe,        text: 'Connecting to website…' },
@@ -24,17 +25,17 @@ const SCAN_STEPS = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 const INTENT_META = {
-  Informational: { color: 'bg-blue-500', light: 'bg-blue-50 text-blue-700 border-blue-200', icon: '📚' },
-  Commercial:    { color: 'bg-purple-500', light: 'bg-purple-50 text-purple-700 border-purple-200', icon: '🛒' },
-  Transactional: { color: 'bg-green-500', light: 'bg-green-50 text-green-700 border-green-200', icon: '💳' },
-  Navigational:  { color: 'bg-orange-500', light: 'bg-orange-50 text-orange-700 border-orange-200', icon: '🧭' },
+  Informational: { icon: '📚', labelCls: 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700' },
+  Commercial:    { icon: '🛒', labelCls: 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700' },
+  Transactional: { icon: '💳', labelCls: 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700' },
+  Navigational:  { icon: '🧭', labelCls: 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700' },
 };
 
 function IntentBadge({ label }) {
-  const meta = INTENT_META[label] || { light: 'bg-gray-100 text-gray-700 border-gray-200', icon: '❓' };
+  const meta = INTENT_META[label] || { labelCls: 'bg-gray-100 text-gray-700 border-gray-200', icon: '❓' };
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-black ${meta.light}`}>
-      <span>{meta.icon}</span>
+    <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-xl border text-[11px] font-black tracking-tight shadow-sm transition-all hover:scale-[1.02] ${meta.labelCls}`}>
+      <span className="grayscale">{meta.icon}</span>
       {label}
     </span>
   );
@@ -313,10 +314,10 @@ function SeoDiffPanel({ result, currentTitle, currentMeta }) {
 }
 
 export default function ScanPage() {
+  const { success, error: toastError, info } = useToast();
   const [url, setUrl] = useState("");
-  const [status, setStatus] = useState("idle"); // idle, scanning, done, error
+  const [status, setStatus] = useState("idle");
   const [scanResult, setScanResult] = useState(null);
-  const [scanError, setScanError] = useState(null);
   const [loadingStep, setLoadingStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const stepRef = useRef(null);
@@ -366,7 +367,6 @@ export default function ScanPage() {
 
     setStatus("scanning");
     setScanResult(null);
-    setScanError(null);
     setCurrentStep(0);
 
     try {
@@ -408,10 +408,11 @@ export default function ScanPage() {
       setStatus("done");
       setCurrentStep(1);
       setCopilotResult(null);
+      success('Scan complete', `SEO score: ${data.score}/100`);
     } catch (error) {
       clearInterval(stepRef.current);
-      setScanError(error.message || "Failed to analyze URL. Is the URL valid?");
-      setStatus("error");
+      toastError('Scan failed', error.message || 'Failed to analyze URL. Is the URL valid?');
+      setStatus("idle");
     }
   };
 
@@ -439,7 +440,9 @@ export default function ScanPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Copilot failed');
       setCopilotResult(data);
+      success('AI suggestions ready', 'Review your optimized title and meta description.');
     } catch (err) {
+      toastError('Copilot failed', err.message);
       setCopilotError(err.message);
     } finally {
       setIsCopiloting(false);
@@ -515,83 +518,75 @@ export default function ScanPage() {
           {currentStep === 0 && (
             <motion.div
               key="step0"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="flex flex-1 items-center justify-center flex-col max-w-2xl mx-auto w-full"
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="flex flex-1 items-center justify-center flex-col max-w-2xl mx-auto w-full py-12 md:py-20"
             >
               {/* ── Loading overlay (shown while scanning) ── */}
               {status === 'scanning' ? (
-                <div className="bg-white dark:bg-[#1e1e28] rounded-[32px] p-8 md:p-12 border border-gray-200 dark:border-gray-700 shadow-sm w-full flex flex-col items-center text-center gap-6">
-                  {/* Animated icon */}
-                  <div className="w-16 h-16 rounded-2xl bg-gray-900 text-white flex items-center justify-center animate-pulse">
-                    {(() => { const S = SCAN_STEPS[loadingStep]?.icon || Activity; return <S className="w-8 h-8" />; })()}
+                <div className="bg-white dark:bg-[#1e1e28] rounded-[32px] p-8 md:p-12 border border-gray-200 dark:border-gray-700 shadow-xl w-full flex flex-col items-center text-center gap-8 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 to-transparent dark:from-white/5 opacity-50 animate-pulse pointer-events-none" />
+                  <div className="w-20 h-20 rounded-[24px] bg-gray-900 dark:bg-white text-white dark:text-gray-900 flex items-center justify-center shadow-2xl relative z-10 transition-all duration-500 transform scale-100 hover:scale-110">
+                    {(() => { const S = SCAN_STEPS[loadingStep]?.icon || Activity; return <S className="w-10 h-10" />; })()}
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold font-heading mb-1">Scanning website…</h2>
-                    <p className="text-sm text-gray-500 font-medium transition-all duration-500">{SCAN_STEPS[loadingStep]?.text}</p>
+                  <div className="relative z-10">
+                    <h2 className="text-2xl font-black font-heading mb-2 tracking-tight">Analysing website pipeline…</h2>
+                    <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">{SCAN_STEPS[loadingStep]?.text}</p>
                   </div>
-                  {/* Progress bar */}
-                  <div className="w-full flex flex-col gap-2">
-                    <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                      <div
-                        className="h-full bg-gray-900 rounded-full transition-all duration-700 ease-out"
-                        style={{ width: `${progress}%` }}
-                      />
+                  <div className="w-full flex flex-col gap-3 relative z-10">
+                    <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-3 overflow-hidden shadow-inner">
+                      <div className="h-full bg-black dark:bg-white rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
                     </div>
-                    <div className="flex justify-between text-xs text-gray-400 font-bold">
-                      <span className="truncate max-w-[60%]">{url}</span>
+                    <div className="flex justify-between text-[11px] text-gray-500 font-black tracking-widest uppercase">
+                      <span className="truncate max-w-[70%]">{url}</span>
                       <span>{progress}%</span>
                     </div>
                   </div>
-                  {/* Activity log */}
-                  <div className="flex flex-col gap-1.5 w-full text-left">
-                    {SCAN_STEPS.slice(0, loadingStep + 1).map((step, i) => {
+                  <div className="flex flex-col gap-1.5 w-full text-left bg-gray-50/50 dark:bg-black/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 relative z-10">
+                    {SCAN_STEPS.slice(Math.max(0, loadingStep - 3), loadingStep + 1).map((step, i) => {
                       const Icon = step.icon;
+                      const globalIdx = Math.max(0, loadingStep - 3) + i;
+                      const isCurrent = globalIdx === loadingStep;
                       return (
-                        <div key={i} className={`flex items-center gap-2 text-xs font-medium transition-all duration-300 ${i === loadingStep ? 'text-gray-900' : 'text-gray-400'}`}>
-                          <Icon className={`w-3.5 h-3.5 shrink-0 ${i < loadingStep ? 'text-green-500' : 'text-gray-400'}`} />
-                          {i < loadingStep
-                            ? <span className="line-through">{step.text}</span>
-                            : <span className="font-bold">{step.text}</span>
-                          }
-                          {i < loadingStep && <CheckCircle2 className="w-3 h-3 text-green-500 ml-auto shrink-0" />}
+                        <div key={globalIdx} className={`flex items-center gap-3 text-xs font-bold transition-all duration-300 ${isCurrent ? 'text-gray-900 dark:text-white translate-x-1' : 'text-gray-400 opacity-60'}`}>
+                          <div className={`w-5 h-5 rounded-lg flex items-center justify-center border ${isCurrent ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : 'bg-white text-gray-300 border-gray-100 dark:bg-gray-800 dark:border-gray-700'}`}>
+                            {isCurrent ? <Loader2 className="w-3 h-3 animate-spin" /> : <Icon className="w-3 h-3" />}
+                          </div>
+                          {step.text}
                         </div>
                       );
                     })}
                   </div>
                 </div>
               ) : (
-                <div className="bg-white dark:bg-[#1e1e28] rounded-[32px] p-8 md:p-12 border border-gray-200 dark:border-gray-700 shadow-sm w-full flex flex-col items-center text-center gap-6">
-                  <div className="w-20 h-20 bg-gray-50 rounded-full border border-gray-100 flex items-center justify-center shadow-inner">
-                    <Globe className="w-8 h-8 text-black" />
+                <div className="bg-white dark:bg-[#1e1e28] rounded-[32px] p-8 md:p-12 border border-gray-200 dark:border-gray-700 shadow-xl w-full flex flex-col items-center text-center gap-8">
+                  <div className="w-24 h-24 bg-gray-50 dark:bg-zinc-800 rounded-[28px] border border-gray-100 dark:border-zinc-700 flex items-center justify-center shadow-inner group">
+                    <Globe className="w-10 h-10 text-black dark:text-white transition-transform duration-500 group-hover:rotate-12" />
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold font-heading mb-2">Target Link</h2>
-                    <p className="text-gray-500 text-sm">Enter the specific URL you wish to analyze.</p>
+                  <div className="max-w-md">
+                    <h2 className="text-3xl font-black font-heading mb-3 tracking-tight">Full SEO Pipeline</h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm font-medium leading-relaxed">Enter your URL to extract metadata, heading hierarchy, keywords, and AI-powered optimizations.</p>
                   </div>
-
-                  <div className="w-full mt-2">
+                  <div className="w-full flex flex-col gap-3">
                     <input
                       type="text"
                       value={url}
                       onChange={(e) => setUrl(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleScan(e); }}
-                      placeholder="https://example.com"
-                      className="w-full border-2 border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-2xl px-6 py-4 text-center text-base focus:outline-none focus:border-gray-900 dark:focus:border-gray-400 transition-colors disabled:opacity-50 font-medium"
+                      placeholder="https://your-website.com"
+                      className="w-full border-2 border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-zinc-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-[20px] px-6 py-5 text-center text-lg font-bold focus:outline-none focus:border-black dark:focus:border-white transition-all shadow-sm focus:shadow-md disabled:opacity-50"
                       disabled={status === 'scanning'}
                     />
-                    {scanError && <p className="text-red-500 text-xs mt-3 font-semibold">{scanError}</p>}
+                    <button
+                      onClick={handleScan}
+                      disabled={status === 'scanning' || !url.trim()}
+                      className="group w-full py-5 bg-black dark:bg-white text-white dark:text-black text-base font-black rounded-[20px] hover:bg-gray-800 dark:hover:bg-gray-100 transition-all flex items-center justify-center gap-3 shadow-xl active:scale-[0.98]"
+                    >
+                      <Search className="w-5 h-5 transition-transform group-hover:scale-110" />
+                      Analyse Pipeline
+                    </button>
                   </div>
-
-                  <button
-                    onClick={handleScan}
-                    disabled={status === 'scanning' || !url.trim()}
-                    className="w-full py-4 mt-2 bg-black text-white text-base font-bold rounded-2xl hover:bg-gray-800 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-md active:scale-[0.98]"
-                  >
-                    <Search className="w-5 h-5" />
-                    Scan
-                  </button>
                 </div>
               )}
             </motion.div>
@@ -601,31 +596,31 @@ export default function ScanPage() {
           {currentStep === 1 && scanResult && (
             <motion.div
               key="step1"
-              initial={{ opacity: 0, filter: "blur(4px)" }}
-              animate={{ opacity: 1, filter: "blur(0px)" }}
+              initial={{ opacity: 0, filter: "blur(10px)", y: 20 }}
+              animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="flex flex-col gap-6 h-full"
+              className="flex flex-col gap-8 h-full"
             >
-              {/* Action Bar */}
-              <div className="flex flex-col md:flex-row items-center justify-between bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-2xl p-4 shadow-sm gap-4">
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="text-black w-6 h-6" />
+              <div className="flex flex-col md:flex-row items-center justify-between bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 rounded-[28px] p-5 md:p-6 shadow-sm gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center shadow-lg">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
                   <div>
-                    <h3 className="font-bold font-heading">Analysis Complete</h3>
-                    <p className="text-xs text-gray-500">Review your Core Web Data and Score before proceeding.</p>
+                    <h3 className="text-lg font-black font-heading leading-tight underline decoration-gray-200 dark:decoration-gray-800 underline-offset-4 decoration-2">Scan Integrity Verified</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest mt-1">Review core metrics before applying AI</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
-                  <button onClick={() => setCurrentStep(3)} className="flex-1 md:flex-none px-6 py-2.5 bg-gray-100 text-black text-sm font-bold rounded-xl hover:bg-gray-200 transition-colors border border-gray-200">
-                    Skip to Review
+                  <button onClick={() => setCurrentStep(3)} className="flex-1 md:flex-none px-6 py-3.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-xs font-black uppercase tracking-wider rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all border border-gray-200 dark:border-gray-700 active:scale-95">
+                    Skip Optimization
                   </button>
-                  <button onClick={() => setCurrentStep(2)} className="flex-1 md:flex-none px-6 py-2.5 bg-black text-white text-sm font-bold rounded-xl hover:bg-gray-800 transition-colors shadow-md flex items-center justify-center gap-2">
-                    <Sparkles className="w-4 h-4" /> Optimize AI
+                  <button onClick={() => setCurrentStep(2)} className="flex-1 md:flex-none px-8 py-3.5 bg-black dark:bg-white text-white dark:text-black text-xs font-black uppercase tracking-widest rounded-2xl hover:shadow-2xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 active:scale-95 group">
+                    <Sparkles className="w-4 h-4 transition-transform group-hover:rotate-12" /> Force Optimize
                   </button>
                 </div>
               </div>
 
-              {/* ── Intent Alignment Engine ─────────────────────────────────── */}
               <IntentAlignmentCard
                 result={intentResult}
                 isLoading={isAnalyzingIntent}
@@ -633,7 +628,8 @@ export default function ScanPage() {
                 onAnalyze={handleIntentAnalysis}
               />
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 flex-1">
+
 
                 {/* Left Side (Core Web Data + Competitors) */}
                 <div className="flex flex-col gap-6 lg:col-span-4 xl:col-span-3">
@@ -1042,7 +1038,7 @@ export default function ScanPage() {
                 </div>
 
                 <div className="mt-8 flex gap-4 w-full">
-                  <button
+                   <button
                     onClick={() => {
                       setUrl("");
                       setStatus("idle");
@@ -1050,9 +1046,18 @@ export default function ScanPage() {
                       setScanResult(null);
                       setCopilotResult(null);
                     }}
-                    className="flex-1 py-4 bg-black text-white text-base font-bold rounded-2xl hover:bg-gray-800 transition-all shadow-md active:scale-[0.98]"
+                    className="flex-1 py-4 border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-[#1e1e28] text-gray-900 dark:text-white text-base font-bold rounded-2xl hover:bg-gray-50 transition-all shadow-sm active:scale-[0.98]"
                   >
                     Run New Scan
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      success('Link Copied', 'Report URL has been copied to clipboard.');
+                    }}
+                    className="flex-1 py-4 bg-black dark:bg-white text-white dark:text-black text-base font-bold rounded-2xl hover:opacity-90 transition-all shadow-xl active:scale-[0.98] flex items-center justify-center gap-2"
+                  >
+                    <LinkIcon size={18} /> Share Report
                   </button>
                 </div>
               </div>

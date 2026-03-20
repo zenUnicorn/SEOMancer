@@ -2,6 +2,7 @@ import { Inter, Montserrat } from "next/font/google";
 import Sidebar from "@/components/Sidebar";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
+import { ToastProvider } from "@/components/ToastProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -47,10 +48,12 @@ export default function RootLayout({ children }) {
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange={false}>
           <AuthProvider>
-            <Sidebar />
-            <main className="flex-1 min-w-0 h-screen overflow-y-auto bg-[#f5f5f7] dark:bg-[#0f0f12]">
-              {children}
-            </main>
+            <ToastProvider>
+              <Sidebar />
+              <main className="flex-1 min-w-0 h-screen overflow-y-auto bg-[#f5f5f7] dark:bg-[#0f0f12]">
+                {children}
+              </main>
+            </ToastProvider>
             {/* Structured Schema Data Injection */}
             <script
               type="application/ld+json"
