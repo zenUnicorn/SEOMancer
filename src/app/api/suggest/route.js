@@ -73,6 +73,13 @@ The JSON must follow this exact structure:
 }
 
 Be specific to this website's industry and content. Don't be generic. Make suggestions based on the actual data.
+
+Also include these impact estimates for the SEO Diff simulator (add them to the same JSON object):
+- "currentTitleCTR": number (1 decimal), estimated organic CTR % for the CURRENT title
+- "suggestedTitleCTR": number (1 decimal), estimated organic CTR % for your IMPROVED title
+- "currentMetaCTR": number (1 decimal), estimated CTR contribution % of the CURRENT meta description
+- "suggestedMetaCTR": number (1 decimal), estimated CTR contribution % of your IMPROVED meta description
+- "scoreDelta": integer, how many SEO score points would likely improve if all suggestions are applied (realistic, 0-25)
 `.trim();
 
     const result = await model.generateContent(prompt);

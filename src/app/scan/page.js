@@ -2,7 +2,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Search, Loader2, Sparkles, Copy, Check, Link as LinkIcon, FileText, BarChart, Tag, Lightbulb, ExternalLink, ArrowUpRight, ArrowRight, ShieldCheck, Zap, ChevronDown, Activity, CheckCircle2 } from "lucide-react";
+import { Globe, Search, Loader2, Sparkles, Copy, Check, Link as LinkIcon, FileText, BarChart, Tag, Lightbulb, ExternalLink, ArrowUpRight, ArrowRight, ShieldCheck, Zap, ChevronDown, Activity, CheckCircle2, Target, BrainCircuit, AlertTriangle, TrendingUp } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 const SCAN_STEPS = [
@@ -18,6 +18,299 @@ const SCAN_STEPS = [
   { icon: Sparkles,     text: 'Finding similar websites…' },
   { icon: CheckCircle2, text: 'Finalising report…' },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INTENT ALIGNMENT CARD COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+
+const INTENT_META = {
+  Informational: { color: 'bg-blue-500', light: 'bg-blue-50 text-blue-700 border-blue-200', icon: '📚' },
+  Commercial:    { color: 'bg-purple-500', light: 'bg-purple-50 text-purple-700 border-purple-200', icon: '🛒' },
+  Transactional: { color: 'bg-green-500', light: 'bg-green-50 text-green-700 border-green-200', icon: '💳' },
+  Navigational:  { color: 'bg-orange-500', light: 'bg-orange-50 text-orange-700 border-orange-200', icon: '🧭' },
+};
+
+function IntentBadge({ label }) {
+  const meta = INTENT_META[label] || { light: 'bg-gray-100 text-gray-700 border-gray-200', icon: '❓' };
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-black ${meta.light}`}>
+      <span>{meta.icon}</span>
+      {label}
+    </span>
+  );
+}
+
+function AlignmentRing({ score }) {
+  const r = 34;
+  const circ = 2 * Math.PI * r;
+  const color = score >= 70 ? '#22c55e' : score >= 40 ? '#f59e0b' : '#ef4444';
+  return (
+    <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r={r} fill="none" stroke="#f3f4f6" strokeWidth="8" />
+        <motion.circle
+          cx="40" cy="40" r={r} fill="none"
+          stroke={color} strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          initial={{ strokeDashoffset: circ }}
+          animate={{ strokeDashoffset: circ - (score / 100) * circ }}
+          transition={{ duration: 1.2, ease: 'easeOut' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-extrabold leading-none" style={{ color }}>{score}</span>
+        <span className="text-[9px] font-bold text-gray-400 mt-0.5">/ 100</span>
+      </div>
+    </div>
+  );
+}
+
+function IntentAlignmentCard({ result, isLoading, error, onAnalyze }) {
+  const isAligned = result && result.alignmentScore >= 70;
+  const isMisaligned = result && result.alignmentScore < 40;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="w-full bg-white dark:bg-[#1e1e28] rounded-[24px] border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
+            <BrainCircuit className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white font-heading">Search Intent Alignment</h3>
+            <p className="text-[11px] text-gray-400 font-medium">Is your content what searchers actually want?</p>
+          </div>
+        </div>
+        {!result && !isLoading && (
+          <button
+            onClick={onAnalyze}
+            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 active:scale-95 transition-all shadow-md"
+          >
+            <Target className="w-3.5 h-3.5" />
+            Analyse Intent
+          </button>
+        )}
+        {result && (
+          <button
+            onClick={onAnalyze}
+            className="text-[11px] font-bold text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors underline underline-offset-2 decoration-gray-300"
+          >
+            Re-run
+          </button>
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="px-6 py-5">
+        {/* Idle — not yet run */}
+        {!result && !isLoading && !error && (
+          <p className="text-xs text-gray-400 dark:text-gray-500 font-medium py-1">
+            Detects whether your content matches searcher intent — Informational, Commercial, Transactional, or Navigational.
+          </p>
+        )}
+
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-6 gap-3 text-center">
+            <div className="relative">
+              <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin" />
+              <BrainCircuit className="w-5 h-5 text-indigo-400 absolute inset-0 m-auto" />
+            </div>
+            <p className="text-sm font-bold text-gray-600 dark:text-gray-300">Reading ranking psychology…</p>
+            <p className="text-xs text-gray-400 font-medium">Comparing your intent signal vs. your actual content mix.</p>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && !isLoading && (
+          <div className="flex items-start gap-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-2xl p-4">
+            <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-xs font-bold text-red-600 dark:text-red-400 mb-0.5">Intent analysis failed</p>
+              <p className="text-xs text-red-500 font-medium">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Result */}
+        {result && !isLoading && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.35 }}
+            className="flex flex-col sm:flex-row gap-5 items-start"
+          >
+            {/* Score Ring */}
+            <AlignmentRing score={result.alignmentScore} />
+
+            {/* Details */}
+            <div className="flex-1 flex flex-col gap-3 min-w-0">
+              {/* Intent pills row */}
+              <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+                <span className="text-gray-400 shrink-0">Target Intent</span>
+                <IntentBadge label={result.targetIntent} />
+                <span className="text-gray-300 mx-1">→</span>
+                <span className="text-gray-400 shrink-0">Actual Content</span>
+                <IntentBadge label={result.actualContentFocus} />
+              </div>
+
+              {/* Verdict */}
+              <div className={`rounded-2xl border px-4 py-3 ${isMisaligned
+                ? 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800'
+                : isAligned
+                  ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800'
+                  : 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800'
+              }`}>
+                <div className="flex items-start gap-2">
+                  {isMisaligned
+                    ? <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                    : isAligned
+                      ? <TrendingUp className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                      : <Zap className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                  }
+                  <p className={`text-xs font-semibold leading-relaxed ${
+                    isMisaligned ? 'text-red-700 dark:text-red-300' : isAligned ? 'text-green-700 dark:text-green-300' : 'text-amber-700 dark:text-amber-300'
+                  }`}>
+                    {result.verdict}
+                  </p>
+                </div>
+              </div>
+
+              {/* Score explanation micro-bar */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-gray-400 shrink-0 w-20">Alignment</span>
+                <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <motion.div
+                    className={`h-full rounded-full ${result.alignmentScore >= 70 ? 'bg-green-500' : result.alignmentScore >= 40 ? 'bg-amber-500' : 'bg-red-500'}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${result.alignmentScore}%` }}
+                    transition={{ duration: 1, ease: 'easeOut' }}
+                  />
+                </div>
+                <span className="text-[10px] font-black text-gray-500 shrink-0">{result.alignmentScore}%</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SEO DIFF — BEFORE vs AFTER IMPACT SIMULATOR
+// ─────────────────────────────────────────────────────────────────────────────
+
+function CtrBar({ label, current, suggested }) {
+  const max = Math.max(suggested * 1.2, 10);
+  const pctCurrent = Math.min((current / max) * 100, 100);
+  const pctSuggested = Math.min((suggested / max) * 100, 100);
+  const delta = (suggested - current).toFixed(1);
+  const improved = suggested > current;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{label}</span>
+        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+          improved ? 'bg-black text-white border-black' : 'bg-gray-100 text-gray-500 border-gray-200'
+        }`}>
+          {improved ? `+${delta}%` : `${delta}%`}
+        </span>
+      </div>
+      {/* Current */}
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] text-gray-400 w-12 shrink-0 font-bold">Before</span>
+        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-gray-300 rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${pctCurrent}%` }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+          />
+        </div>
+        <span className="text-[9px] font-black text-gray-400 w-8 text-right shrink-0">{current}%</span>
+      </div>
+      {/* Suggested */}
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] text-gray-400 w-12 shrink-0 font-bold">After</span>
+        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-black rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${pctSuggested}%` }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.15 }}
+          />
+        </div>
+        <span className="text-[9px] font-black text-black w-8 text-right shrink-0">{suggested}%</span>
+      </div>
+    </div>
+  );
+}
+
+function SeoDiffPanel({ result, currentTitle, currentMeta }) {
+  if (!result?.currentTitleCTR) return null;
+  const totalDelta = (
+    (result.suggestedTitleCTR - result.currentTitleCTR) +
+    (result.suggestedMetaCTR - result.currentMetaCTR)
+  ).toFixed(1);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.1 }}
+      className="bg-white dark:bg-[#1e1e28] rounded-2xl border border-gray-200 dark:border-gray-700 p-5 flex flex-col gap-5"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-gray-400" />
+          <span className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Impact Simulator</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {result.scoreDelta > 0 && (
+            <span className="text-[10px] font-black bg-black text-white px-2.5 py-1 rounded-full">
+              +{result.scoreDelta} pts potential
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Separator */}
+      <div className="border-t border-gray-100 dark:border-gray-700" />
+
+      {/* CTR Bars */}
+      <div className="flex flex-col gap-4">
+        <CtrBar
+          label="Title CTR"
+          current={result.currentTitleCTR}
+          suggested={result.suggestedTitleCTR}
+        />
+        <CtrBar
+          label="Meta CTR"
+          current={result.currentMetaCTR}
+          suggested={result.suggestedMetaCTR}
+        />
+      </div>
+
+      {/* Footer summary */}
+      <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-700">
+        <span className="text-[10px] text-gray-400 font-medium">Estimates based on title quality signals &amp; keyword density</span>
+        <span className="text-[10px] font-black text-black dark:text-white">
+          Total CTR lift: +{totalDelta}%
+        </span>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function ScanPage() {
   const [url, setUrl] = useState("");
@@ -46,6 +339,15 @@ export default function ScanPage() {
   const [copilotResult, setCopilotResult] = useState(null);
   const [copilotError, setCopilotError] = useState(null);
   const [copied, setCopied] = useState(null);
+
+  // Preview img state
+  const [previewLoaded, setPreviewLoaded] = useState(false);
+  const [previewFailed, setPreviewFailed] = useState(false);
+
+  // Intent Alignment Engine state
+  const [isAnalyzingIntent, setIsAnalyzingIntent] = useState(false);
+  const [intentResult, setIntentResult] = useState(null);
+  const [intentError, setIntentError] = useState(null);
 
   // Steps: 0: Target Link, 1: Analyze, 2: Optimize, 3: Review
   const [currentStep, setCurrentStep] = useState(0);
@@ -96,8 +398,13 @@ export default function ScanPage() {
         suggestedKeywords: data.suggestedKeywords,
         competitors: data.competitors,
         data: data.data,
-        details: data.details
+        details: data.details,
+        contentSnapshot: data.contentSnapshot,
       });
+      setPreviewLoaded(false);
+      setPreviewFailed(false);
+      setIntentResult(null);
+      setIntentError(null);
       setStatus("done");
       setCurrentStep(1);
       setCopilotResult(null);
@@ -136,6 +443,32 @@ export default function ScanPage() {
       setCopilotError(err.message);
     } finally {
       setIsCopiloting(false);
+    }
+  };
+
+  const handleIntentAnalysis = async () => {
+    if (!scanResult) return;
+    setIsAnalyzingIntent(true);
+    setIntentResult(null);
+    setIntentError(null);
+    try {
+      const res = await fetch('/api/intent-alignment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: scanResult.url,
+          title: scanResult.details?.title?.value || '',
+          keywords: (scanResult.foundKeywords?.map(k => k.word) || []).concat(scanResult.suggestedKeywords?.map(k => k.word) || []),
+          contentSnapshot: scanResult.contentSnapshot || '',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Intent analysis failed');
+      setIntentResult(data);
+    } catch (err) {
+      setIntentError(err.message);
+    } finally {
+      setIsAnalyzingIntent(false);
     }
   };
 
@@ -292,6 +625,14 @@ export default function ScanPage() {
                 </div>
               </div>
 
+              {/* ── Intent Alignment Engine ─────────────────────────────────── */}
+              <IntentAlignmentCard
+                result={intentResult}
+                isLoading={isAnalyzingIntent}
+                error={intentError}
+                onAnalyze={handleIntentAnalysis}
+              />
+
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
 
                 {/* Left Side (Core Web Data + Competitors) */}
@@ -394,52 +735,64 @@ export default function ScanPage() {
 
                 </div>
 
-                {/* Center Live Preview */}
+                {/* Center: Website Preview (always screenshot via microlink) */}
                 <div className="bg-white dark:bg-[#1e1e28] rounded-[24px] border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col lg:col-span-5 xl:col-span-6 min-h-[400px] lg:min-h-[600px] overflow-hidden">
-                  <div className="w-full bg-gray-50 border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-gray-900 font-heading uppercase tracking-wider bg-white border border-gray-200 shadow-sm px-3 py-1.5 rounded-lg flex items-center gap-2">
-                        <Globe size={14} className="text-gray-400" /> {scanResult.iframeBlocked ? 'Screenshot' : 'Live Preview'}
-                      </span>
-                      {scanResult.iframeBlocked && (
-                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg">
-                          iframe blocked by site policy
-                        </span>
-                      )}
-                    </div>
-                    <a href={scanResult.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-gray-500 hover:text-black flex items-center gap-1.5 transition-colors">
+                  {/* Bar */}
+                  <div className="w-full bg-gray-50 dark:bg-[#16161f] border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
+                    <span className="text-xs font-bold text-gray-900 dark:text-white font-heading uppercase tracking-wider bg-white dark:bg-[#1e1e28] border border-gray-200 dark:border-gray-700 shadow-sm px-3 py-1.5 rounded-lg flex items-center gap-2">
+                      <Globe size={14} className="text-gray-400" /> Website Preview
+                    </span>
+                    <a href={scanResult.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-gray-500 hover:text-black dark:hover:text-white flex items-center gap-1.5 transition-colors">
                       <ExternalLink size={14} /> View Live
                     </a>
                   </div>
 
-                  {scanResult.iframeBlocked ? (
-                    // Screenshot fallback via Thum.io (free, no API key)
-                    <div className="relative flex-1 w-full min-h-[400px] overflow-hidden bg-gray-50">
+                  {/* Screenshot — always use microlink, React state for loading/error */}
+                  <div className="relative flex-1 w-full min-h-[400px] bg-gray-50 dark:bg-[#16161f] overflow-hidden">
+                    {/* Loading skeleton — shown until image loads or fails */}
+                    {!previewLoaded && !previewFailed && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 animate-pulse">
+                        <div className="w-12 h-12 rounded-2xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                          <Globe className="w-6 h-6 text-gray-400" />
+                        </div>
+                        <div className="h-2 w-32 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                        <div className="h-2 w-24 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                        <p className="text-[11px] text-gray-400 font-medium mt-1">Loading preview…</p>
+                      </div>
+                    )}
+
+                    {/* Actual screenshot */}
+                    {!previewFailed && (
                       <img
                         src={scanResult.screenshotUrl}
-                        alt={`Screenshot of ${scanResult.url}`}
-                        className="w-full h-full object-cover object-top"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
+                        alt={`Preview of ${scanResult.url}`}
+                        className={`w-full h-full object-cover object-top transition-opacity duration-500 ${previewLoaded ? 'opacity-100' : 'opacity-0'}`}
+                        onLoad={() => setPreviewLoaded(true)}
+                        onError={() => { setPreviewLoaded(false); setPreviewFailed(true); }}
                       />
-                      <div className="absolute inset-0 hidden flex-col items-center justify-center gap-3 bg-gray-50">
-                        <Globe className="w-10 h-10 text-gray-300" />
-                        <p className="text-sm font-bold text-gray-500">Screenshot unavailable</p>
-                        <a href={scanResult.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold underline text-gray-400 hover:text-black">
-                          Visit {scanResult.url} directly →
+                    )}
+
+                    {/* Graceful fallback if screenshot fails */}
+                    {previewFailed && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gray-50 dark:bg-[#16161f] px-6 text-center">
+                        <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                          <Globe className="w-7 h-7 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Preview unavailable</p>
+                          <p className="text-xs text-gray-400 font-medium">The site may block automated screenshots.</p>
+                        </div>
+                        <a
+                          href={scanResult.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-xs font-bold bg-black text-white px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors"
+                        >
+                          <ExternalLink size={12} /> Visit site directly
                         </a>
                       </div>
-                    </div>
-                  ) : (
-                    <iframe
-                      src={scanResult.url}
-                      title="Website Preview"
-                      className="w-full flex-1 bg-white border-none min-h-[400px]"
-                      sandbox="allow-same-origin allow-scripts"
-                    />
-                  )}
+                    )}
+                  </div>
                 </div>
 
                 {/* Right Side (Score + Keywords) */}
@@ -594,44 +947,58 @@ export default function ScanPage() {
                 )}
 
                 {copilotResult && (
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in zoom-in-95 duration-500">
-                    {/* Left side AI */}
-                    <div className="flex flex-col gap-4">
-                      <div className="bg-gray-50 p-5 rounded-2xl border border-gray-200">
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="flex-1 flex flex-col gap-5"
+                  >
+                    {/* Top row: Title + Meta cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Suggested Title */}
+                      <div className="bg-gray-50 dark:bg-[#16161f] p-5 rounded-2xl border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Suggested Title</span>
-                          <button onClick={() => copyToClipboard(copilotResult.improvedTitle, 'title')} className="text-gray-400 hover:text-black">
-                            {copied === 'title' ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                          <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Suggested Title</span>
+                          <button onClick={() => copyToClipboard(copilotResult.improvedTitle, 'title')} className="text-gray-400 hover:text-black dark:hover:text-white transition-colors">
+                            {copied === 'title' ? <Check size={14} className="text-black dark:text-white" /> : <Copy size={14} />}
                           </button>
                         </div>
-                        <p className="text-sm font-bold leading-relaxed">{copilotResult.improvedTitle}</p>
+                        <p className="text-sm font-bold leading-relaxed text-gray-900 dark:text-white">{copilotResult.improvedTitle}</p>
                       </div>
-                      <div className="bg-gray-50 p-5 rounded-2xl border border-gray-200">
+                      {/* Suggested Meta */}
+                      <div className="bg-gray-50 dark:bg-[#16161f] p-5 rounded-2xl border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Suggested Meta Description</span>
-                          <button onClick={() => copyToClipboard(copilotResult.improvedMeta, 'meta')} className="text-gray-400 hover:text-black">
-                            {copied === 'meta' ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                          <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Suggested Meta</span>
+                          <button onClick={() => copyToClipboard(copilotResult.improvedMeta, 'meta')} className="text-gray-400 hover:text-black dark:hover:text-white transition-colors">
+                            {copied === 'meta' ? <Check size={14} className="text-black dark:text-white" /> : <Copy size={14} />}
                           </button>
                         </div>
-                        <p className="text-sm font-bold leading-relaxed">{copilotResult.improvedMeta}</p>
+                        <p className="text-sm font-bold leading-relaxed text-gray-900 dark:text-white">{copilotResult.improvedMeta}</p>
                       </div>
                     </div>
 
-                    {/* Right side AI */}
-                    <div className="flex flex-col">
-                      <div className="bg-black text-white p-6 rounded-2xl h-full shadow-lg">
-                        <h4 className="text-xs uppercase tracking-widest font-bold text-gray-400 mb-6 flex items-center gap-2"><Zap size={14} className="text-white" /> Quick Wins</h4>
-                        <ul className="flex flex-col gap-4">
-                          {copilotResult.quickWins?.map((win, i) => (
-                            <li key={i} className="flex gap-3 text-sm">
-                              <span className="text-gray-500 mt-0.5"><Check size={16} /></span>
-                              <span className="leading-relaxed font-medium text-gray-200">{win}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                    {/* SEO Diff — Impact Simulator */}
+                    <SeoDiffPanel
+                      result={copilotResult}
+                      currentTitle={scanResult?.details?.title?.value}
+                      currentMeta={scanResult?.details?.metaDesc?.value}
+                    />
+
+                    {/* Quick Wins */}
+                    <div className="bg-black dark:bg-[#0d0d10] text-white p-5 rounded-2xl">
+                      <h4 className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-4 flex items-center gap-2">
+                        <Zap size={12} className="text-white" /> Quick Wins
+                      </h4>
+                      <ul className="flex flex-col gap-3">
+                        {copilotResult.quickWins?.map((win, i) => (
+                          <li key={i} className="flex gap-3 text-xs">
+                            <Check size={14} className="text-gray-500 mt-0.5 shrink-0" />
+                            <span className="leading-relaxed font-medium text-gray-200">{win}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  </div>
+                  </motion.div>
                 )}
               </div>
             </motion.div>

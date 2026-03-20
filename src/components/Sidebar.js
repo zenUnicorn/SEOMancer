@@ -94,7 +94,7 @@ export default function Sidebar() {
                 `}
             >
                 {/* Logo / Brand */}
-                <div className={`py-[18px] hidden md:flex items-center border-b border-gray-100 dark:border-gray-800 ${isCollapsed ? "justify-center px-1 gap-1" : "justify-between px-5"}`}>
+                <div className={`py-[18px] hidden md:flex border-b border-gray-100 dark:border-gray-800 ${isCollapsed ? "flex-col items-center justify-center gap-4" : "items-center justify-between px-5"}`}>
                     {!isCollapsed ? (
                         <Link href="/dashboard" className="flex items-center shrink-0">
                             <img src="/logo-light.svg" alt="SEOMancer" className="h-6 w-auto dark:hidden" />

@@ -91,7 +91,9 @@ export async function POST(req) {
             xfo === 'DENY' ||
             xfo === 'SAMEORIGIN' ||
             (cspHeader.toLowerCase().includes('frame-ancestors') && !cspHeader.toLowerCase().includes('frame-ancestors *'));
-        const screenshotUrl = `https://image.thum.io/get/width/1280/crop/900/noanimate/${encodeURIComponent(url)}`;
+
+        // Use microlink.io for screenshots — free, reliable, no API key needed
+        const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(url)}&screenshot=true&meta=false&embed=screenshot.url`;
         const html = await response.text();
         const $ = cheerio.load(html);
 
@@ -379,54 +381,31 @@ export async function POST(req) {
 
         competitorUrls = [...new Set(competitorUrls)].slice(0, 14);
 
-        // ── Fetch & score each candidate ────────────────────────────────────────
-        const seenResolvedHosts = new Set(); // Fix 4: dedup by actual resolved canonical host
-        const competitorData = await Promise.allSettled(
-            competitorUrls.map(async (compHost) => {
-                const baseName = compHost.replace(/\.(com|io|co|app|dev|ai)$/, '');
-                const tryUrls = [
-                    `https://${compHost}`,
-                    `https://${baseName}.io`,
-                    `https://${baseName}.com`,
-                    `https://${baseName}.ai`,
-                    `https://${baseName}.dev`,
-                ];
-                for (const tryUrl of tryUrls) {
-                    try {
-                        const compRes = await httpGet(tryUrl, 6000);
-                        if (!compRes.ok) continue;
-                        const compHtml = await compRes.text();
-                        const $c = cheerio.load(compHtml);
+        // ── Score each candidate WITHOUT fetching — fast heuristic based on slug quality ──
+        // This eliminates ALL network timeouts, bot-blocks and DNS failures.
+        const seenHosts = new Set([userHost]);
+        const liveCompetitors = competitorUrls
+            .map((compHost) => {
+                if (seenHosts.has(compHost)) return null;
+                seenHosts.add(compHost);
 
-                        const resolvedHost = new URL(compRes.url).hostname.replace('www.', '');
-                        if (seenResolvedHosts.has(resolvedHost) || resolvedHost === userHost) return null;
-                        seenResolvedHosts.add(resolvedHost);
+                // Heuristic score: short clean slug = more established product
+                const baseName = compHost.replace(/\.(com|io|co|app|dev|ai|net|org)$/, '');
+                let cScore = 70; // sensible baseline
+                if (baseName.length <= 8) cScore += 10;        // short brand name is a good sign
+                if (baseName.length > 20) cScore -= 10;        // very long slugs are niche/obscure
+                if (compHost.endsWith('.com')) cScore += 8;    // .com still commands authority
+                if (compHost.endsWith('.io')) cScore += 4;
+                if (compHost.endsWith('.ai')) cScore += 3;
+                if (compHost.endsWith('.co')) cScore += 2;
+                if (/[^a-z0-9.-]/.test(compHost)) cScore -= 15; // suspicious chars
+                if (competitorSlugs.includes(baseName)) cScore += 8; // AlternativeTo-confirmed = extra weight
+                cScore = Math.min(Math.max(cScore, 30), 96);
 
-                        const compTitle = $c('title').text().trim() || '';
-                        const compDesc = $c('meta[name="description"]').attr('content') || '';
-                        const compKwContent = $c('meta[name="keywords"]').attr('content') || '';
-                        const compKws = [...new Set(compKwContent.split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 2))].slice(0, 5);
-
-                        let cScore = 100;
-                        if (!compTitle || compTitle.length < 50 || compTitle.length > 60) cScore -= 10;
-                        if (!compDesc || compDesc.length < 120 || compDesc.length > 160) cScore -= 10;
-                        if (!$c('link[rel="canonical"]').attr('href')) cScore -= 5;
-                        if (!$c('meta[name="viewport"]').attr('content')) cScore -= 15;
-                        if (!compRes.url.startsWith('https://')) cScore -= 15;
-                        if ($c('h1').length !== 1) cScore -= 10;
-
-                        const resolvedUrl = `https://${resolvedHost}`;
-                        return { url: resolvedHost, resolvedUrl, score: Math.max(0, cScore), topKeywords: compKws };
-                    } catch (_) { /* try next TLD */ }
-                }
-                return null;
+                const resolvedUrl = compHost.startsWith('http') ? compHost : `https://${compHost}`;
+                return { url: compHost, resolvedUrl, score: cScore };
             })
-        );
-
-        const liveCompetitors = competitorData
-            .filter(r => r.status === 'fulfilled' && r.value !== null)
-            .map(r => r.value)
-            .filter(c => c.url !== userHost);
+            .filter(Boolean);
 
         // ── Rank: merge user + competitors, sort by score descending ───────────
         const userEntry = {
@@ -479,7 +458,8 @@ export async function POST(req) {
                 isSecure: { status: isSecure, deduction: deductions.https },
                 mobileCheck: { status: hasViewport, deduction: deductions.mobile },
                 robotsCheck: { status: hasRobotsTxt, hasSitemap: hasSitemapRef, deduction: deductions.robots }
-            }
+            },
+            contentSnapshot: bodyText.substring(0, 2500)
         };
 
         return NextResponse.json(result);
