@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/components/ToastProvider';
+import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/lib/supabase';
 import {
     GitCompareArrows, Globe, ChevronRight, FileText, Trophy,
     CheckCircle2, XCircle, AlertTriangle, ExternalLink, ArrowRight,
@@ -71,6 +73,7 @@ function StatusIndicator({ value, trueText = 'Yes', falseText = 'No' }) {
 
 export default function GapAnalysis() {
     const { success, error: toastError, warning } = useToast();
+    const { user } = useAuth();
     const [tab, setTab] = useState('input');
     const [urlA, setUrlA] = useState('');
     const [urlB, setUrlB] = useState('');
@@ -117,6 +120,19 @@ export default function GapAnalysis() {
             setResult(data);
             setTab('results');
             success('Analysis complete', `${data.siteA?.hostname} vs ${data.siteB?.hostname} — results ready.`);
+
+            if (user) {
+                supabase.from('gap_analyses').insert({
+                    user_id: user.id,
+                    url_a: urlA,
+                    url_b: urlB,
+                    score_a: data.siteA?.score,
+                    score_b: data.siteB?.score,
+                    result_data: data
+                }).then(({ error }) => {
+                    if (error) console.error("Failed to save gap analysis to history", error);
+                });
+            }
         } catch (err) {
             clearInterval(stepRef.current);
             toastError('Analysis failed', err.message || 'Could not complete the comparison. Please try again.');

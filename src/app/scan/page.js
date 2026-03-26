@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Globe, Search, Loader2, Sparkles, Copy, Check, Link as LinkIcon, FileText, BarChart, Tag, Lightbulb, ExternalLink, ArrowUpRight, ArrowRight, ShieldCheck, Zap, ChevronDown, Activity, CheckCircle2, Target, BrainCircuit, AlertTriangle, TrendingUp } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/components/ToastProvider";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/lib/supabase";
 
 const SCAN_STEPS = [
   { icon: Globe,        text: 'Connecting to website…' },
@@ -315,6 +317,8 @@ function SeoDiffPanel({ result, currentTitle, currentMeta }) {
 
 export default function ScanPage() {
   const { success, error: toastError, info } = useToast();
+  const { user } = useAuth();
+  
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState("idle");
   const [scanResult, setScanResult] = useState(null);
@@ -409,6 +413,18 @@ export default function ScanPage() {
       setCurrentStep(1);
       setCopilotResult(null);
       success('Scan complete', `SEO score: ${data.score}/100`);
+      
+      // Save result to Supabase
+      if (user) {
+        supabase.from('scans').insert({
+          user_id: user.id,
+          url: data.url,
+          score: data.score,
+          result_data: data
+        }).then(({ error }) => {
+          if (error) console.error("Failed to save scan to history", error);
+        });
+      }
     } catch (error) {
       clearInterval(stepRef.current);
       toastError('Scan failed', error.message || 'Failed to analyze URL. Is the URL valid?');

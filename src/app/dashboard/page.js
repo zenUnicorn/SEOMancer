@@ -15,11 +15,16 @@ import {
     Globe
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/lib/supabase";
+import { formatDistanceToNow } from 'date-fns';
 
 export default function Overview() {
+    const { user } = useAuth();
     // Simulate real-time SEO score updates for "Live" feel
     const [seoScore, setSeoScore] = useState(82);
-    const [scansCompleted, setScansCompleted] = useState(24);
+    const [activities, setActivities] = useState([]);
+    const [loadingActivities, setLoadingActivities] = useState(true);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -28,6 +33,44 @@ export default function Overview() {
         }, 8000);
         return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        async function fetchRecentActivity() {
+            if (!user) return;
+            setLoadingActivities(true);
+            try {
+                // Fetch recent scans
+                const { data: scans } = await supabase
+                    .from('scans')
+                    .select('id, url, created_at, score')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                // Fetch recent gap analyses
+                const { data: gaps } = await supabase
+                    .from('gap_analyses')
+                    .select('id, url_a, url_b, created_at')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                // Mix and sort
+                const combined = [
+                    ...(scans || []).map(s => ({ ...s, type: 'scan' })),
+                    ...(gaps || []).map(g => ({ ...g, type: 'gap' }))
+                ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                 .slice(0, 5);
+
+                setActivities(combined);
+            } catch (err) {
+                console.error("Error fetching activity", err);
+            } finally {
+                setLoadingActivities(false);
+            }
+        }
+        fetchRecentActivity();
+    }, [user]);
 
     const topActions = [
         { 
@@ -231,36 +274,48 @@ export default function Overview() {
                 </div>
 
                 {/* Secondary Sidebar Metrics */}
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-6 w-full h-full lg:col-span-1">
                     {/* Active Scans Summary */}
                     <div className="bg-white dark:bg-[#121316] rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm flex-1 flex flex-col">
-                        <h3 className="font-bold text-gray-900 dark:text-white mb-3">Recent Activity</h3>
+                        <h3 className="font-bold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
                         
-                        <div className="flex flex-col gap-4 py-0">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center shrink-0 border border-green-200 dark:border-green-800/50">
-                                    <CheckCircle2 size={24} />
-                                </div>
-                                <div>
-                                    <p className="font-bold text-gray-900 dark:text-white text-sm">Scan Completed</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate w-40 hover:underline cursor-pointer">acme-corp.com/pricing</p>
-                                </div>
-                                <span className="ml-auto text-xs font-bold text-gray-400">2h ago</span>
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 flex items-center justify-center shrink-0 border border-yellow-200 dark:border-yellow-800/50">
-                                    <AlertCircle size={24} />
-                                </div>
-                                <div>
-                                    <p className="font-bold text-gray-900 dark:text-white text-sm">Gap Analysis Ready</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Competitor report generated</p>
-                                </div>
-                                <span className="ml-auto text-xs font-bold text-gray-400">5h ago</span>
-                            </div>
+                        <div className="flex flex-col gap-4 flex-1">
+                            {loadingActivities ? (
+                                <div className="text-xs text-gray-500 font-medium py-4 text-center animate-pulse">Loading activity...</div>
+                            ) : activities.length === 0 ? (
+                                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium py-4 text-center">No recent activity found.</div>
+                            ) : (
+                                activities.map((act, idx) => (
+                                    <Link href="/history" key={act.id + act.type} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors group border border-transparent hover:border-gray-100 dark:hover:border-gray-700">
+                                        <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                                            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">{idx + 1}</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                            <div className="flex items-center gap-1.5 mb-0.5">
+                                                {act.type === 'scan' ? (
+                                                    <CheckCircle2 size={10} className="text-blue-500" />
+                                                ) : (
+                                                    <AlertCircle size={10} className="text-indigo-500" />
+                                                )}
+                                                <p className="font-bold text-gray-900 dark:text-white text-[11px] truncate uppercase tracking-wide">
+                                                    {act.type === 'scan' ? 'Scan' : 'Gap Analysis'}
+                                                </p>
+                                            </div>
+                                            <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium truncate w-full group-hover:text-black dark:group-hover:text-white transition-colors leading-tight">
+                                                {act.type === 'scan' ? act.url : `${act.url_a} vs ${act.url_b}`}
+                                            </p>
+                                        </div>
+                                        <div className="shrink-0 text-right flex flex-col items-end">
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">
+                                                {formatDistanceToNow(new Date(act.created_at), { addSuffix: true }).replace('about ', '')}
+                                            </span>
+                                        </div>
+                                    </Link>
+                                ))
+                            )}
                         </div>
 
-                        <Link href="/scan" className="mt-auto text-center text-sm font-bold text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors py-3 w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#121316] rounded-xl shadow-sm">
+                        <Link href="/history" className="mt-6 text-center text-sm font-bold text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors py-3 w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#121316] rounded-xl shadow-sm">
                             View All History
                         </Link>
                     </div>

@@ -14,7 +14,8 @@ import {
     ArrowLeft01Icon,
     ArrowRight01Icon,
     Logout01Icon,
-    PenTool01Icon
+    PenTool01Icon,
+    Time01Icon
 } from "hugeicons-react";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth } from "@/components/AuthProvider";
@@ -147,6 +148,27 @@ export default function Sidebar() {
                             </Link>
                         );
                     })}
+
+                    <div className="my-4 border-b border-gray-200 dark:border-gray-800"></div>
+
+                    <Link
+                        href="/history"
+                        onClick={() => setIsOpen(false)}
+                        title={isCollapsed ? "History" : undefined}
+                        className={`
+                            flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                            ${isCollapsed ? "justify-center px-2" : "px-3"}
+                            ${pathname === '/history'
+                                ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md font-semibold"
+                                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                            }
+                        `}
+                    >
+                        <span className={`shrink-0 ${pathname === '/history' ? "text-white dark:text-gray-900" : "text-gray-500 dark:text-gray-400"}`}>
+                            <Time01Icon size={20} />
+                        </span>
+                        {!isCollapsed && <span>History</span>}
+                    </Link>
                 </div>
 
                 {/* Bottom Area: Theme toggle + Profile Section */}
