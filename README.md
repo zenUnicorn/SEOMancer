@@ -1,49 +1,95 @@
 # SEOMancer
 
-**SEOMancer** is a powerful, developer-friendly SEO analysis and optimization tool built with Next.js, Tailwind CSS, Cheerio, and the Gemini AI SDK. It allows users to quickly scan websites, extract Core Web Data (load times, mobile readiness, secure connections, etc.), identify key SEO improvement opportunities, and securely preview their sites live.
+**SEOMancer** is a powerful, developer-friendly SEO analysis and optimization tool built with Next.js, Tailwind CSS, Cheerio, and the Google Gemini AI SDK. It allows users to quickly scan websites, extract Core Web Data (load times, mobile readiness, secure connections, etc.), identify key SEO improvement opportunities, and securely preview their sites live.
 
-### Key Features
-- **Dynamic Site Scanning:** Extracts accurate, actionable technical SEO data using an efficient, headless approach.
-- **AI Copilot Optimization:** Native integration with Gemini AI to deeply interpret raw metrics and suggest optimized title tags, meta descriptions, and structural "Quick Wins".
-- **Responsive & Modern Design:** Fully responsive, animated monochrome interface tailored for Desktop, Tablet, and Mobile workflows via Framer Motion.
-- **Progressive Wizard Flow:** A guided 4-step user experience combining URL targeting, live previewing, AI enhancements, and a summarized review phase.
-- **Secure Authentication & Database:** Powered natively by Supabase, including robust session-managed routing, email signups, integrated Google OAuth functionality, and scalable database architecture out of the box.
+## 🚀 What is SEOMancer?
+
+SEOMancer acts as your personal AI-driven SEO consultant. It goes beyond simple keyword counting by performing deep technical audits and using state-of-the-art AI (Gemini 1.5 Flash) to analyze the context of your page, providing human-readable, highly actionable advice to improve search engine rankings.
 
 ---
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+## 🌟 Key Features & Flow
 
-## Getting Started
+SEOMancer provides a streamlined, highly visual workflow:
 
-First, run the development server:
+1. **Dashboard Overview:** Your central hub for active projects, showing metric cards for total scans, optimizations done, and average SEO scores, along with an interactive activity chart.
+2. **Single URL Scan:** 
+   * **Target phase:** Enter a URL to crawl.
+   * **Analyze phase:** SEOMancer connects to the URL, parsing the DOM with Cheerio to extract Title, Meta Description, Headings (H1/H2), Images, Links, and performance data. It computes an on-the-fly SEO score out of 100.
+   * **Optimize phase:** The scraped data is fed to Google's Gemini AI, which acts as an "SEO Copilot" to generate AI-driven insights, rewritten titles, recommended meta descriptions, and structural content improvements.
+   * **Review phase:** View everything in a beautiful, dark-mode native interface using Framer Motion animations.
+3. **Gap Analysis (Competitor Comparison):** 
+   * Enter your website and a competitor's website.
+   * The tool fetches metrics for both simultaneously and compares them head-to-head across 20+ technical signals (Word count, internal links, headings, load times, schema markup, HTTPS, Open Graph tags, etc.).
+   * Generates a comprehensive AI Executive Summary detailing exactly *why* the winner ranks higher and the top fixes the loser should implement.
+   * Export the complete analysis report to PDF, Word (DOCX), or plain text!
+4. **Rich Text Editing:** Features an integrated TipTap rich text editor for drafting improved content.
+5. **Dark Mode Integration:** Full system-aware or manually toggleable Light/Dark mode via `next-themes`, offering a stunning and premium visual aesthetic in either mode.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Technologies & Tools Used
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### Frontend & UI
+- **[Next.js 16](https://nextjs.org/)** - React framework for building fast, full-stack applications (App Router).
+- **[React 19](https://react.dev/)** - Core UI library.
+- **[Tailwind CSS v4](https://tailwindcss.com/)** - Utility-first CSS framework for rapid UI development and styling.
+- **[Framer Motion](https://www.framer.com/motion/)** - Production-ready animation library for React (powers the smooth scan loading states and UI transitions).
+- **[Lucide React](https://lucide.dev/) & [Hugeicons React](https://hugeicons.com/)** - Beautiful, consistent iconography.
+- **[next-themes](https://github.com/pacocoursey/next-themes)** - Perfect Next.js dark mode implementation.
+- **[TipTap](https://tiptap.dev/)** - Headless, highly-extensible rich text editor for the content drafting experience.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Backend, Data & Scraping
+- **[Next.js Edge/Server API Routes](https://nextjs.org/docs/app/building-your-application/routing/route-handlers)** - Handles the crawler and AI requests securely on the server side.
+- **[Cheerio](https://cheerio.js.org/)** - Fast, flexible, and lean implementation of core jQuery designed specifically for the server (used to scrape and parse target HTML pages for SEO tags).
+- **[Supabase](https://supabase.com/)** - Open-source Firebase alternative (used for authentication, session management, and database storage).
 
-## Learn More
+### Artificial Intelligence
+- **[@google/generative-ai](https://www.npmjs.com/package/@google/generative-ai)** - Google's official Gemini AI SDK. Features the `gemini-1.5-flash` model for blazing-fast inference when generating SEO suggestions, content rewrites, and gap analysis summaries.
 
-To learn more about Next.js, take a look at the following resources:
+### Utilities
+- **jsPDF & AutoTable** - Used dynamically for generating robust PDF Gap Analysis reports directly in the browser.
+- **date-fns** - Modern JavaScript date utility library.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 💻 Getting Started
 
-## Deploy on Vercel
+### Prerequisites
+Make sure you have Node.js (v18+) and npm/yarn/pnpm installed. You will also need API keys for:
+- Google Gemini AI (`GEMINI_API_KEY`)
+- Supabase (`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Installation 
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd SEOMancer
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   # or yarn / pnpm / bun install
+   ```
+
+3. **Set up Environment Variables:**
+   Create a `.env.local` file in the root directory and add your keys:
+   ```env
+   GEMINI_API_KEY=your_gemini_api_key_here
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+4. **Spin up the development server:**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open the app:**
+   Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+*Designed and engineered for modern SEO professionals and developers to build better, faster, and more optimized experiences on the web.*
