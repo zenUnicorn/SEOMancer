@@ -2,7 +2,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Search, Loader2, Sparkles, Copy, Check, Link as LinkIcon, FileText, BarChart, Tag, Lightbulb, ExternalLink, ArrowUpRight, ArrowRight, ShieldCheck, Zap, ChevronDown, Activity, CheckCircle2, Target, BrainCircuit, AlertTriangle, TrendingUp } from "lucide-react";
+import { Globe, Search, Loader2, Sparkles, Copy, Check, Link as LinkIcon, FileText, BarChart, Tag, Lightbulb, ExternalLink, ArrowUpRight, ArrowRight, ShieldCheck, Zap, ChevronDown, Activity, CheckCircle2, Target, BrainCircuit, AlertTriangle, TrendingUp, Twitter, Linkedin, Mail, MessageSquare } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { useAuth } from "@/components/AuthProvider";
@@ -353,6 +353,8 @@ export default function ScanPage() {
   const [isAnalyzingIntent, setIsAnalyzingIntent] = useState(false);
   const [intentResult, setIntentResult] = useState(null);
   const [intentError, setIntentError] = useState(null);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const shareRef = useRef(null);
 
   // Steps: 0: Target Link, 1: Analyze, 2: Optimize, 3: Review
   const [currentStep, setCurrentStep] = useState(0);
@@ -1028,33 +1030,33 @@ export default function ScanPage() {
                 <div className="w-20 h-20 bg-black text-white rounded-full flex items-center justify-center shadow-lg mb-6">
                   <Check size={40} strokeWidth={3} />
                 </div>
-                <h2 className="text-3xl font-bold font-heading mb-3">Scan Complete!</h2>
-                <p className="text-gray-500 text-sm mb-8 max-w-md">Your SEO deep-dive for <span className="font-bold text-black">{scanResult?.url}</span> is mapped and optimized.</p>
+                <h2 className="text-3xl font-bold font-heading mb-3 text-gray-900 dark:text-white">Scan Complete!</h2>
+                <p className="text-gray-500 text-sm mb-8 max-w-md">Your SEO deep-dive for <span className="font-bold text-black dark:text-white">{scanResult?.url}</span> is mapped and optimized.</p>
 
-                <div className="w-full bg-gray-50 rounded-2xl border border-gray-200 p-6 flex flex-col gap-6 text-left">
-                  <div className="flex items-center justify-between border-b border-gray-200 pb-4">
-                    <span className="font-bold">Final Score Dashboard</span>
-                    <span className="text-2xl font-black font-heading bg-white px-3 py-1 rounded-xl shadow-sm border border-gray-100">{score}<span className="text-xs text-gray-400">/100</span></span>
+                <div className="w-full bg-gray-50 dark:bg-[#121316] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 flex flex-col gap-6 text-left">
+                  <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
+                    <span className="font-bold text-gray-900 dark:text-white">Final Score Dashboard</span>
+                    <span className="text-2xl font-black font-heading bg-white dark:bg-gray-800 px-3 py-1 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 text-gray-900 dark:text-white">{score}<span className="text-xs text-gray-400">/100</span></span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col justify-center shadow-sm">
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col justify-center shadow-sm">
                       <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Status</span>
                       <span className="text-sm font-bold text-green-600 flex items-center gap-1.5"><ShieldCheck size={16} /> Success</span>
                     </div>
-                    <div className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col justify-center shadow-sm">
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col justify-center shadow-sm">
                       <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Keywords</span>
-                      <span className="text-sm font-bold">{(scanResult?.foundKeywords?.length || 0) + (scanResult?.suggestedKeywords?.length || 0)} Total Anchors</span>
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">{(scanResult?.foundKeywords?.length || 0) + (scanResult?.suggestedKeywords?.length || 0)} Total Anchors</span>
                     </div>
-                    <div className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col justify-center shadow-sm col-span-2">
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col justify-center shadow-sm col-span-2">
                       <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Advice to keep SEO Up-to-date</span>
-                      <p className="text-xs text-gray-600 leading-relaxed font-medium">Keep your Core Web Data metrics rapid by compressing images, ensuring your content uses semantic H1/H2 layering, naturally dispersing high-density keywords, and continually writing relevant content for your targeted meta descriptions.</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-medium">Keep your Core Web Data metrics rapid by compressing images, ensuring your content uses semantic H1/H2 layering, naturally dispersing high-density keywords, and continually writing relevant content for your targeted meta descriptions.</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-8 flex gap-4 w-full">
-                   <button
+                  <button
                     onClick={() => {
                       setUrl("");
                       setStatus("idle");
@@ -1062,19 +1064,95 @@ export default function ScanPage() {
                       setScanResult(null);
                       setCopilotResult(null);
                     }}
-                    className="flex-1 py-4 border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-[#1e1e28] text-gray-900 dark:text-white text-base font-bold rounded-2xl hover:bg-gray-50 transition-all shadow-sm active:scale-[0.98]"
+                    className="flex-1 py-4 border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-[#1e1e28] text-gray-900 dark:text-white text-base font-bold rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm active:scale-[0.98]"
                   >
                     Run New Scan
                   </button>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(window.location.href);
-                      success('Link Copied', 'Report URL has been copied to clipboard.');
-                    }}
-                    className="flex-1 py-4 bg-black dark:bg-white text-white dark:text-black text-base font-bold rounded-2xl hover:opacity-90 transition-all shadow-xl active:scale-[0.98] flex items-center justify-center gap-2"
-                  >
-                    <LinkIcon size={18} /> Share Report
-                  </button>
+                  
+                  <div className="flex-1 relative" ref={shareRef}>
+                    <motion.button
+                      whileHover={{ y: -5 }}
+                      onClick={() => setShowShareMenu(!showShareMenu)}
+                      className="w-full py-4 bg-black dark:bg-white text-white dark:text-black text-base font-bold rounded-2xl transition-all shadow-xl active:scale-[0.98] flex items-center justify-center gap-2"
+                    >
+                      <LinkIcon size={18} /> Share Report
+                    </motion.button>
+
+                    <AnimatePresence>
+                      {showShareMenu && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                          className="absolute bottom-full left-0 right-0 mb-4 bg-white dark:bg-[#1a1a22] border border-gray-200 dark:border-gray-800 rounded-[28px] shadow-2xl p-4 flex flex-col gap-2 z-50"
+                        >
+                          <p className="text-[10px] font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest text-center mb-1">Spread the Word</p>
+                          
+                          {/* Twitter */}
+                          <button
+                            onClick={() => {
+                              const msg = `I just completed my website SEO scan on SEOMancer and I scored ${score} on ${scanResult?.url}, follow this link https://seomancer.com to scan your websites SEO today!`;
+                              window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(msg)}`, '_blank');
+                              setShowShareMenu(false);
+                            }}
+                            className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-[#1DA1F2] group-hover:scale-110 transition-transform">
+                              <Twitter size={16} />
+                            </div>
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Share on Twitter</span>
+                          </button>
+
+                          {/* LinkedIn */}
+                          <button
+                            onClick={() => {
+                              const siteUrl = "https://seomancer.com";
+                              window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(siteUrl)}`, '_blank');
+                              setShowShareMenu(false);
+                            }}
+                            className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-[#0A66C2] group-hover:scale-110 transition-transform">
+                              <Linkedin size={16} />
+                            </div>
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Post to LinkedIn</span>
+                          </button>
+
+                          {/* Email / Messaging */}
+                          <button
+                            onClick={() => {
+                              const msg = `I just completed my website SEO scan on SEOMancer and I scored ${score} on ${scanResult?.url}, follow this link https://seomancer.com to scan your websites SEO today!`;
+                              window.location.href = `mailto:?subject=My Website SEO Report&body=${encodeURIComponent(msg)}`;
+                              setShowShareMenu(false);
+                            }}
+                            className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 group-hover:scale-110 transition-transform">
+                              <Mail size={16} />
+                            </div>
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Send as Message</span>
+                          </button>
+
+                          <div className="h-px bg-gray-100 dark:bg-gray-800 mx-2 my-1" />
+
+                          {/* Copy Link fallback */}
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(window.location.href);
+                              success('Link Copied', 'Report URL has been copied to clipboard.');
+                              setShowShareMenu(false);
+                            }}
+                            className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group text-gray-500"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <Copy size={16} />
+                            </div>
+                            <span className="text-xs font-bold">Copy Direct Link</span>
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
               </div>
             </motion.div>

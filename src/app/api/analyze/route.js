@@ -77,7 +77,7 @@ export async function POST(req) {
         // Fetch HTML
         let response;
         try {
-            response = await httpGet(url, 15000);
+            response = await httpGet(url, 30000);
         } catch (error) {
             return NextResponse.json({ error: 'Failed to fetch the URL. Please check if it is correct.' }, { status: 400 });
         }

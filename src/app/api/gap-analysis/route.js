@@ -74,7 +74,7 @@ async function httpGet(url, redirectsLeft = 5) {
                 res.on('error', reject);
             }
         );
-        req.setTimeout(15000, () => { req.destroy(); reject(Object.assign(new Error('Timeout'), { name: 'TimeoutError' })); });
+        req.setTimeout(30000, () => { req.destroy(); reject(Object.assign(new Error('Timeout'), { name: 'TimeoutError' })); });
         req.on('error', reject);
         req.end();
     });
@@ -273,7 +273,7 @@ export async function POST(req) {
             try {
                 const genAI = new GoogleGenerativeAI(apiKey);
                 const model = genAI.getGenerativeModel({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-1.5-flash',
                     generationConfig: { responseMimeType: 'application/json' }
                 });
 

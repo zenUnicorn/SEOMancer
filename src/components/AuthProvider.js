@@ -51,23 +51,21 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, [pathname, router]);
 
-  // To prevent UI flashes of the protected content, show a generic loading screen initially
-  if (loading) {
-    return (
-      <div suppressHydrationWarning={true} className="w-full w-screen flex-1 h-screen min-h-screen bg-[#f5f5f7] dark:bg-[#0f0f12] flex items-center justify-center">
-        <div suppressHydrationWarning={true} className="flex flex-col items-center justify-center animate-pulse gap-3 text-gray-900 dark:text-white">
-          <div suppressHydrationWarning={true} className="flex items-center gap-3">
-            <div suppressHydrationWarning={true} className="w-8 h-8 rounded-full border-[4px] border-gray-900 dark:border-white"></div>
-            <span suppressHydrationWarning={true} className="font-bold text-2xl tracking-tight">SEOMancer</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Stability fix: Always render the Provider and the children to keep the hook count stable.
+  // Use a conditional overlay for the loading state instead of an early return.
   return (
-    <AuthContext.Provider value={{ user }}>
-      {children}
+    <AuthContext.Provider value={{ user, loading }}>
+        {children}
+        {loading && (
+            <div suppressHydrationWarning={true} className="fixed inset-0 z-[9999] w-screen h-screen bg-[#f5f5f7] dark:bg-[#0f0f12] flex items-center justify-center">
+                <div suppressHydrationWarning={true} className="flex flex-col items-center justify-center animate-pulse gap-3 text-gray-900 dark:text-white">
+                    <div suppressHydrationWarning={true} className="flex items-center gap-3">
+                        <div suppressHydrationWarning={true} className="w-8 h-8 rounded-full border-[4px] border-gray-900 dark:border-white"></div>
+                        <span suppressHydrationWarning={true} className="font-bold text-2xl tracking-tight">SEOMancer</span>
+                    </div>
+                </div>
+            </div>
+        )}
     </AuthContext.Provider>
   );
 };

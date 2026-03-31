@@ -8,7 +8,7 @@ import {
     GitCompareArrows, Globe, ChevronRight, FileText, Trophy,
     CheckCircle2, XCircle, AlertTriangle, ExternalLink, ArrowRight,
     ShieldCheck, Smartphone, Link2, Image, Search, Tag, Code2, FileSearch,
-    Zap, TrendingUp, Activity
+    Zap, TrendingUp, Activity, Loader2
 } from 'lucide-react';
 import {
     FileExportIcon,

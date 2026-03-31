@@ -7,13 +7,16 @@ export function ThemeProvider({ children, ...props }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
+  // Stability fix: Always render NextThemesProvider to maintain a consistent hook count in React 19.
+  // The suppressHydrationWarning handles the mismatched attributes during the mount phase.
+  return (
+    <NextThemesProvider {...props}>
+      <div style={{ visibility: mounted ? "visible" : "hidden" }} className="contents">
+        {children}
+      </div>
+    </NextThemesProvider>
+  );
 }
