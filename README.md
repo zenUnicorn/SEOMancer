@@ -2,13 +2,13 @@
 
 **SEOMancer** is a powerful, developer-friendly SEO analysis and optimization tool built with Next.js, Tailwind CSS, Cheerio, and the Google Gemini AI SDK. It allows users to quickly scan websites, extract Core Web Data (load times, mobile readiness, secure connections, etc.), identify key SEO improvement opportunities, and securely preview their sites live.
 
-## 🚀 What is SEOMancer?
+## What is SEOMancer?
 
 SEOMancer acts as your personal AI-driven SEO consultant. It goes beyond simple keyword counting by performing deep technical audits and using state-of-the-art AI (Gemini 1.5 Flash) to analyze the context of your page, providing human-readable, highly actionable advice to improve search engine rankings.
 
 ---
 
-## 🌟 Key Features & Flow
+## Key Features & Flow
 
 SEOMancer provides a streamlined, highly visual workflow:
 
@@ -28,7 +28,7 @@ SEOMancer provides a streamlined, highly visual workflow:
 
 ---
 
-## 🛠️ Technologies & Tools Used
+##  Technologies & Tools Used
 
 ### Frontend & UI
 - **[Next.js 16](https://nextjs.org/)** - React framework for building fast, full-stack applications (App Router).
@@ -53,7 +53,7 @@ SEOMancer provides a streamlined, highly visual workflow:
 
 ---
 
-## 💻 Getting Started
+##  Getting Started
 
 ### Prerequisites
 Make sure you have Node.js (v18+) and npm/yarn/pnpm installed. You will also need API keys for:
